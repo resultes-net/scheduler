@@ -1,0 +1,3 @@
+[submodule "resultes-dev-utils"]
+	path = resultes-dev-utils
+	url = git@github.com:SPF-OST/resultes-dev-utils.git

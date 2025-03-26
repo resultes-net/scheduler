@@ -1,0 +1,6 @@
+-r release-3rd-party.in
+
+black
+mypy
+pip-compile-multi
+uv
