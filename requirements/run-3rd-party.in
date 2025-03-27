@@ -1,0 +1,7 @@
+python-openstackclient
+python-heatclient
+python-novaclient
+
+fastapi[standard]
+sqlmodel
+requests
