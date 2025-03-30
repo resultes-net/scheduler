@@ -1,3 +1,6 @@
 [submodule "resultes-dev-utils"]
 	path = resultes-dev-utils
 	url = git@github.com:SPF-OST/resultes-dev-utils.git
+[submodule "src/resultes_scheduler/database_utils"]
+	path = src/resultes_scheduler/database_utils
+	url = git@github.com:SPF-OST/resultes-database-utils.git
