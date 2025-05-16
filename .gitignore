@@ -1,7 +1,12 @@
 venv/
 .idea/
 
-**/__pycache__
+**/.mypy_cache/
+**/__pycache__/
 **/*.egg-info
 
 database.db
+node_modules/
+build/
+generated_client/
+openapitools.json

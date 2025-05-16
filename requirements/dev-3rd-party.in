@@ -1,6 +1,7 @@
--r run-3rd-party.in
+-c constraints.txt
+
+-r build-3rd-party.in
 
 black
 mypy
 pip-compile-multi
-uv

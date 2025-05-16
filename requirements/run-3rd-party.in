@@ -1,7 +1,10 @@
+-c constraints.txt
+
+file:generated_client
+
+grpcio
+
 python-openstackclient
 python-heatclient
 python-novaclient
 
-fastapi[standard]
-sqlmodel
-requests

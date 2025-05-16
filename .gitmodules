@@ -1,6 +1,6 @@
 [submodule "resultes-dev-utils"]
-	path = resultes-dev-utils
+	path = dev-utils
 	url = git@github.com:SPF-OST/resultes-dev-utils.git
-[submodule "src/resultes_scheduler/database_utils"]
-	path = src/resultes_scheduler/database_utils
-	url = git@github.com:SPF-OST/resultes-database-utils.git
+[submodule "openapi-schema"]
+	path = openapi-schema
+	url = https://github.com/resultes-net/openapi-schema.git

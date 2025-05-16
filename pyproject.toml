@@ -21,3 +21,6 @@ resultes_scheduler = ["py.typed"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements/run-3rd-party.in"]}
+
+[tool.uv]
+config-settings = { editable_mode = "compat" }

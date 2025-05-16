@@ -1,0 +1,4 @@
+-r run-3rd-party.in
+
+file:.
+file:./generated_client
