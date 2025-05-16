@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/match-tag: true
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      resultes.net/component: scheduler
+  template:
+    metadata:
+      labels:
+        resultes.net/component: scheduler
+    spec:
+      containers:
+        - image: ghcr.io/resultes-net/scheduler:latest
+          name: scheduler
+          env:
+            - name: HOST
+              value: internal-server.server.svc.cluster.local
+            - name: PORT
+              value: 8000
+      imagePullSecrets:
+        - name: read-ghcr-io-auth-secret
+      restartPolicy: Always
