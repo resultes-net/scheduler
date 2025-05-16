@@ -1,6 +1,6 @@
 [submodule "resultes-dev-utils"]
 	path = dev-utils
-	url = git@github.com:SPF-OST/resultes-dev-utils.git
+	url = https://github.com/resultes-net/dev-utils.git
 [submodule "openapi-schema"]
 	path = openapi-schema
 	url = https://github.com/resultes-net/openapi-schema.git
