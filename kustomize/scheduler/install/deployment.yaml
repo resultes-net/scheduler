@@ -23,7 +23,7 @@ spec:
           name: scheduler
           env:
             - name: HOST
-              value: internal-server.server.svc.cluster.local
+              value: internal-server
             - name: PORT
               value: "8000"
       imagePullSecrets:
