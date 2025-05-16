@@ -1,7 +1,4 @@
 {
-  "scripts": {
-    "generate-client": "./generate-client.sh"
-  },
   "dependencies": {
     "@openapitools/openapi-generator-cli": "^2.20.0"
   }
