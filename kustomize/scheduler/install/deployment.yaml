@@ -25,7 +25,7 @@ spec:
             - name: HOST
               value: internal-server.server.svc.cluster.local
             - name: PORT
-              value: 8000
+              value: "8000"
       imagePullSecrets:
         - name: read-ghcr-io-auth-secret
       restartPolicy: Always
