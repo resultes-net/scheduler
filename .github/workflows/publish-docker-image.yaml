@@ -41,4 +41,4 @@ jobs:
       - name: Push Docker image
         id: push
         run: |
-          docker push ghcr.io/resultes-net/client:latest
+          docker push ghcr.io/resultes-net/scheduler:latest
