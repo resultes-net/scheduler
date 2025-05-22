@@ -1,4 +1,6 @@
+-c constraints.txt
+
 -r run-3rd-party.in
 
-file:.
-file:./generated_client
+file:./pydantic-models
+file:./scheduler-runner-comm

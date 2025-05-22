@@ -4,3 +4,9 @@
 [submodule "openapi-schema"]
 	path = openapi-schema
 	url = https://github.com/resultes-net/openapi-schema.git
+[submodule "pydantic-models"]
+	path = pydantic-models
+	url = https://github.com/resultes-net/pydantic-models.git
+[submodule "scheduler-runner-comm"]
+	path = scheduler-runner-comm
+	url = https://github.com/resultes-net/scheduler-runner-comm.git
