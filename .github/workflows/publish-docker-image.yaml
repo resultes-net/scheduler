@@ -19,10 +19,8 @@ jobs:
           private-key: ${{ secrets.READ_RESULTES_REPOS_APP_KEY }}
           repositories: |
             scheduler
-            openapi-schema
             dev-utils
             pydantic-schema
-            scheduler-runner-comm
       - name: Checkout repository
         uses: actions/checkout@v4
         with:

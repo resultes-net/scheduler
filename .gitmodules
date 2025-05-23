@@ -7,6 +7,3 @@
 [submodule "pydantic-models"]
 	path = pydantic-models
 	url = https://github.com/resultes-net/pydantic-models.git
-[submodule "scheduler-runner-comm"]
-	path = scheduler-runner-comm
-	url = https://github.com/resultes-net/scheduler-runner-comm.git

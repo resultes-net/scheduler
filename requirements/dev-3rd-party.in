@@ -1,5 +1,6 @@
 -c constraints.txt
 
+-r test-3rd-party.in
 -r build-3rd-party.in
 
 black

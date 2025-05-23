@@ -2,6 +2,7 @@
 
 aiohttp
 jsonrpcclient
+pydantic
 
 python-openstackclient
 python-heatclient
