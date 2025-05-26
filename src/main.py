@@ -47,8 +47,6 @@ async def loop(
 
     next_wakeup_time = _dt.datetime.now() + PERIOD
 
-    tasks = set[_asyncio.Task[None]]()
-
     try:
         async with _asyncio.TaskGroup() as task_group:
             while not _is_shutting_down:
@@ -66,35 +64,15 @@ async def loop(
                 for _, simulations in simulations_by_user_id.items():
                     for simulation in simulations:
                         coroutine = create_variations(runner_client, simulation)
-                        task = task_group.create_task(coroutine)
-                        tasks.add(task)
+                        task_group.create_task(coroutine)
 
                 await _sleep_until(next_wakeup_time)
 
                 next_wakeup_time += PERIOD
 
-                tasks = {t for t in tasks if not t.done()}
-
             _log.info("Exited main loop.")
 
-            if tasks:
-                _log.info("Waiting for tasks to finish...")
-
-                _, incomplete_tasks = await _asyncio.wait(
-                    tasks, timeout=SHUTDOWN_TIMEOUT_SECONDS
-                )
-
-                if not incomplete_tasks:
-                    _log.info("...DONE.")
-
-                if incomplete_tasks:
-                    _log.warning(
-                        "%d task(s) did not finish within %d second(s). They will be cancelled.",
-                        len(incomplete_tasks),
-                        SHUTDOWN_TIMEOUT_SECONDS,
-                    )
-
-                    task_group.create_task(terminate_task_group())
+            task_group.create_task(terminate_task_group())
 
     except* TerminateTaskGroup:
         pass
@@ -152,5 +130,7 @@ if __name__ == "__main__":
 
     _log.basicConfig(format=LOG_FORMAT, level=log_level)
     _log.info("Starting scheduler...")
-
+        
     _asyncio.run(main(server_base_uri, runner_base_uri))
+
+    

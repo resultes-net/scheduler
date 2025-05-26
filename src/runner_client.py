@@ -17,7 +17,6 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
 
     def __init__(self, websocket: _ahttp.ClientWebSocketResponse) -> None:
         self._websocket = websocket
-        self._is_running = False
         self._task: _asyncio.Task[None] | None = None
         self._new_responses_received_event = _asyncio.Event()
         self._parsed_responses_by_request_id = dict[int, _jrpcl.responses.Response]()
@@ -32,25 +31,21 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
         exc_value,
         traceback,
     ) -> bool:
-        if not self._is_running or not self._task:
+        if not self._task:
             raise RuntimeError("Client not running.")
 
-        self._is_running = False
-        await _asyncio.wait_for(self._task, timeout=self._SHUTDOWN_TIMEOUT_SECONDS)
+        self._task.cancel()
 
         # Don't ignore exception that caused this method to be called
         return False
 
     async def _response_reader(self) -> None:
-        self._is_running = True
 
         _LOGGER.debug("Start reading responses.")
 
-        while self._is_running:
-            try:
-                response = await self._websocket.receive_json(
-                    timeout=self._WAKEUP_PERIOD
-                )
+        try:
+            while True:
+                response = await self._websocket.receive_json(timeout=self._WAKEUP_PERIOD)
 
                 _LOGGER.debug("Received response %s.", response)
 
@@ -68,13 +63,8 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 _LOGGER.debug("Notifying requests.")
                 self._new_responses_received_event.set()
                 self._new_responses_received_event.clear()
-
-            except TimeoutError:
-                pass
-
-        _LOGGER.info("Exiting main loop.")
-        self._is_running = False
-        self._new_responses_received_event.set()
+        finally:
+            _LOGGER.info("Exiting main loop.")
 
     async def create_variations(
         self, parameters: _pttes.TtesParameters
@@ -99,7 +89,7 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 _tp.assert_never(_)
 
     async def _get_response(self, request_id: int) -> _jrpcl.responses.Response:
-        while self._is_running:
+        while True:
             await self._new_responses_received_event.wait()
 
             _LOGGER.debug("Hoping for request id %d...", request_id)
@@ -111,8 +101,3 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 return response
 
             _LOGGER.debug("...maybe next time.")
-
-        _LOGGER.warning(
-            "Terminating but didn't receive response to request %d.", request_id
-        )
-        raise RuntimeError("Didn't receive response for request.", request_id)
