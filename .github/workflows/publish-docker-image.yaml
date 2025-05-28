@@ -20,7 +20,8 @@ jobs:
           repositories: |
             scheduler
             dev-utils
-            pydantic-schema
+            docker-utils
+            pydantic-models
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
