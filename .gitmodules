@@ -7,3 +7,6 @@
 [submodule "pydantic-models"]
 	path = pydantic-models
 	url = https://github.com/resultes-net/pydantic-models.git
+[submodule "docker-utils"]
+	path = docker-utils
+	url = https://github.com/resultes-net/docker-utils.git

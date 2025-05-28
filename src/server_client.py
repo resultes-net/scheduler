@@ -1,7 +1,6 @@
 import collections.abc as _cabc
 
 import aiohttp as _ahttp
-import pytest as _pt
 import resultes_pydantic_models.simulations.simulation as _psim
 
 
@@ -22,14 +21,3 @@ class ServerClient:
             return result
 
 
-class TestServerClient:
-    @_pt.mark.asyncio
-    async def test_get_simulations_waiting_for_variations_creation_by_user_id(
-        self,
-    ) -> None:
-        async with _ahttp.ClientSession("http://localhost:8000") as session:
-            client = ServerClient(session)
-            simulations = (
-                await client.get_simulations_waiting_for_variations_creation_by_user_id()
-            )
-            print(simulations)
