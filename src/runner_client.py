@@ -45,7 +45,9 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
 
         try:
             while True:
-                response = await self._websocket.receive_json(timeout=self._WAKEUP_PERIOD)
+                response = await self._websocket.receive_json(
+                    timeout=self._WAKEUP_PERIOD
+                )
 
                 _LOGGER.debug("Received response %s.", response)
 
