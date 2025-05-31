@@ -22,10 +22,15 @@ spec:
         - image: ghcr.io/resultes-net/scheduler:latest
           name: scheduler
           env:
-            - name: HOST
+            - name: SERVER_HOST
               value: internal-server.server.svc.cluster.local
-            - name: PORT
+            - name: SERVER_PORT
               value: "8000"
+            - name: RUNNER_HOST
+              value: 172.21.3.132
+            - name: RUNNER_PORT
+              value: "3000"
+                            
       imagePullSecrets:
         - name: read-ghcr-io-auth-secret
       restartPolicy: Always
