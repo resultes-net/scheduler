@@ -45,9 +45,12 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
 
         try:
             while True:
-                response = await self._websocket.receive_json(
-                    timeout=self._WAKEUP_PERIOD
-                )
+                try:
+                    response = await self._websocket.receive_json(
+                        timeout=self._WAKEUP_PERIOD
+                    )
+                except TimeoutError:
+                    continue
 
                 _LOGGER.debug("Received response %s.", response)
 
@@ -67,6 +70,7 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 self._new_responses_received_event.clear()
         except Exception as exception:
             _LOGGER.error("An exception occurred: %s", exception)
+            raise
         finally:
             _LOGGER.info("Exiting main loop.")
 
