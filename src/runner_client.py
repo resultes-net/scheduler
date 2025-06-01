@@ -6,6 +6,7 @@ import typing as _tp
 
 import aiohttp as _ahttp
 import jsonrpcclient as _jrpcl
+import resultes_pydantic_models.pytrnsys as _mpytrnsys
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 
 _LOGGER = _log.getLogger(__file__)
@@ -77,8 +78,17 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
     async def create_variations(
         self, parameters: _pttes.TtesParameters
     ) -> _cabc.Sequence[str]:
-        params = {"parameters": parameters.model_dump()}
-        json = _jrpcl.request("create_variations", params)
+        # params = {"parameters": parameters.model_dump()}
+
+        runner_job = _mpytrnsys.RunnerJob(
+            object_storage_path=_mpytrnsys.ObjectStoragePath(
+                container="resultes", path="build-runner-image/TRNSYS18_resultes.zip"
+            ),
+            script_to_run="does_not_exist.py",
+        )
+
+        params = {"runner_job": runner_job.model_dump()}
+        json = _jrpcl.request("run_python_in_pytrnsys_venv", params)
 
         _LOGGER.debug("Sending request %s.", json)
         await self._websocket.send_json(json)

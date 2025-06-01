@@ -14,7 +14,7 @@ import runner_client as _rc
 import server_client as _sc
 
 SHUTDOWN_TIMEOUT_SECONDS = 60
-PERIOD_SECONDS = 10.0
+PERIOD_SECONDS = 60.0
 PERIOD = _dt.timedelta(seconds=PERIOD_SECONDS)
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
