@@ -65,6 +65,8 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 _LOGGER.debug("Notifying requests.")
                 self._new_responses_received_event.set()
                 self._new_responses_received_event.clear()
+        except Exception as exception:
+            _LOGGER.error("An exception occurred: %s", exception)
         finally:
             _LOGGER.info("Exiting main loop.")
 
