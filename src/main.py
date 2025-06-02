@@ -81,7 +81,7 @@ async def loop(
 async def create_variations(
     runner_client: _rc.RunnerClient, simulation: _psim.Simulation
 ) -> None:
-    variation_ids = await runner_client.create_variations(simulation.parameters)
+    variation_ids = await runner_client.create_variations(simulation.id, simulation.parameters)
 
     formatted_variation_ids = ", ".join(variation_ids)
     _log.info(

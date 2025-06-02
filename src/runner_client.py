@@ -76,27 +76,28 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
             _LOGGER.info("Exiting main loop.")
 
     async def create_variations(
-        self, parameters: _pttes.TtesParameters
+        self, simulation_id: str, parameters: _pttes.TtesParameters
     ) -> _cabc.Sequence[str]:
         # params = {"parameters": parameters.model_dump()}
 
         runner_job = _mpytrnsys.RunnerJob(
-            object_storage_path=_mpytrnsys.ObjectStoragePath(
-                container="resultes", path="build-runner-image/TRNSYS18_resultes.zip"
+            id=simulation_id,
+            object_storage_path=_mpytrnsys.ObjectStorageZipPath(
+                container="resultes",
+                path="pytrnsys-systems/systems-main.zip",
             ),
-            script_to_run="does_not_exist.py",
+            script_to_run="systems-main/TTES/run.pytrnsys",
+            results_glob_pattern="systems-main/TTES/results/*/",
         )
 
         params = {"runner_job": runner_job.model_dump()}
-        json = _jrpcl.request("run_python_in_pytrnsys_venv", params)
+        json = _jrpcl.request("run_python_script_in_pytrnsys_venv", params)
 
         _LOGGER.debug("Sending request %s.", json)
         await self._websocket.send_json(json)
 
         response = await self._get_response(json["id"])
         _LOGGER.debug("Got response %s.", response)
-
-        _jrpcl.parse
 
         match response:
             case _jrpcl.Ok(result):
