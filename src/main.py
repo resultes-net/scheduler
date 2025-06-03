@@ -13,7 +13,7 @@ import resultes_pydantic_models.simulations.simulation as _psim
 import runner_client as _rc
 import server_client as _sc
 
-SHUTDOWN_TIMEOUT_SECONDS = 60
+SHUTDOWN_TIMEOUT_SECONDS = 60.0
 PERIOD_SECONDS = 60.0
 PERIOD = _dt.timedelta(seconds=PERIOD_SECONDS)
 
