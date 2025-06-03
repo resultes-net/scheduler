@@ -3,6 +3,7 @@ import datetime as _dt
 import logging as _log
 import os as _os
 import pprint as _pprint
+import secrets as _secs
 import signal as _sig
 import socket as _soc
 import typing as _tp
@@ -13,7 +14,6 @@ import resultes_pydantic_models.simulations.simulation as _psim
 import runner_client as _rc
 import server_client as _sc
 
-SHUTDOWN_TIMEOUT_SECONDS = 60.0
 PERIOD_SECONDS = 60.0
 PERIOD = _dt.timedelta(seconds=PERIOD_SECONDS)
 
@@ -81,7 +81,10 @@ async def loop(
 async def create_variations(
     runner_client: _rc.RunnerClient, simulation: _psim.Simulation
 ) -> None:
-    variation_ids = await runner_client.create_variations(simulation.id, simulation.parameters)
+    simulation_id = _secs.token_hex(nbytes=4)
+    variation_ids = await runner_client.create_variations(
+        simulation_id, simulation.parameters
+    )
 
     formatted_variation_ids = ", ".join(variation_ids)
     _log.info(
@@ -130,7 +133,5 @@ if __name__ == "__main__":
 
     _log.basicConfig(format=LOG_FORMAT, level=log_level)
     _log.info("Starting scheduler...")
-        
-    _asyncio.run(main(server_base_uri, runner_base_uri))
 
-    
+    _asyncio.run(main(server_base_uri, runner_base_uri))
