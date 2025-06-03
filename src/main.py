@@ -82,15 +82,19 @@ async def create_variations(
     runner_client: _rc.RunnerClient, simulation: _psim.Simulation
 ) -> None:
     simulation_id = _secs.token_hex(nbytes=4)
-    variation_ids = await runner_client.create_variations(
+    variation_ids_or_empty = await runner_client.create_variations(
         simulation_id, simulation.parameters
     )
 
-    formatted_variation_ids = ", ".join(variation_ids)
-    _log.info(
-        "The following variations have been created: %s.",
-        formatted_variation_ids,
-    )
+    if variation_ids_or_empty:
+        formatted_variation_ids = ", ".join(variation_ids_or_empty)
+        _log.info(
+            "The following variations have been created for request %s: %s.",
+            simulation_id,
+            formatted_variation_ids,
+        )
+    else:
+        _log.info("Got empty response to request %s.", simulation_id)
 
 
 async def _sleep_until(wakeup_time: _dt.datetime) -> None:
