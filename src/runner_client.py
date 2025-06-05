@@ -12,7 +12,7 @@ import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 _LOGGER = _log.getLogger(__file__)
 
 
-class RunnerClient(_ctx.AbstractAsyncContextManager):
+class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
     _WAKEUP_PERIOD = 2.5
     _SHUTDOWN_TIMEOUT_SECONDS = 2 * _WAKEUP_PERIOD
 
@@ -20,7 +20,9 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
         self._websocket = websocket
         self._task: _asyncio.Task[None] | None = None
         self._new_responses_received_event = _asyncio.Event()
-        self._parsed_responses_by_request_id = dict[int, _jrpcl.responses.Response]()
+        self._parsed_response_futures_by_request_id = dict[
+            int, _asyncio.Future[_jrpcl.responses.Response]
+        ]()
 
     async def __aenter__(self) -> _tp.Self:
         self._task = _asyncio.create_task(self._response_reader())
@@ -64,11 +66,9 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 )
 
                 for response in responses:
-                    self._parsed_responses_by_request_id[response.id] = response
+                    future = self._parsed_response_futures_by_request_id[response.id]
+                    future.set_result(response)
 
-                _LOGGER.debug("Notifying requests.")
-                self._new_responses_received_event.set()
-                self._new_responses_received_event.clear()
         except Exception as exception:
             _LOGGER.error("An exception occurred: %s", exception)
             raise
@@ -108,15 +108,8 @@ class RunnerClient(_ctx.AbstractAsyncContextManager):
                 _tp.assert_never(_)
 
     async def _get_response(self, request_id: int) -> _jrpcl.responses.Response:
-        while True:
-            await self._new_responses_received_event.wait()
+        future = _asyncio.Future[_jrpcl.responses.Response]()
 
-            _LOGGER.debug("Hoping for request id %d...", request_id)
+        self._parsed_response_futures_by_request_id[request_id] = future
 
-            response = self._parsed_responses_by_request_id.get(request_id)
-
-            if response:
-                _LOGGER.debug("...success!.")
-                return response
-
-            _LOGGER.debug("...maybe next time.")
+        return await future
