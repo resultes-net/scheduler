@@ -108,8 +108,17 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
                 _tp.assert_never(_)
 
     async def _get_response(self, request_id: int) -> _jrpcl.responses.Response:
-        future = _asyncio.Future[_jrpcl.responses.Response]()
+        async with self._registered_future(request_id) as future:
+            response = await future
+            return response
 
+    @_ctx.asynccontextmanager
+    async def _registered_future(
+        self, request_id: int
+    ) -> _cabc.AsyncIterator[_asyncio.Future[_jrpcl.responses.Response]]:
+        future = _asyncio.Future[_jrpcl.responses.Response]()
         self._parsed_response_futures_by_request_id[request_id] = future
 
-        return await future
+        yield future
+        
+        del self._parsed_response_futures_by_request_id[request_id]
