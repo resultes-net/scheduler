@@ -13,6 +13,8 @@ class ServerClient:
     ) -> _cabc.Mapping[str, _cabc.Sequence[_psim.Simulation]]:
         params = {"state": "waiting-for-variations-creation"}
         async with self._session.get("simulations", json="", params=params) as response:
+            response.raise_for_status()
+
             json = await response.json()
             result = {
                 user_id: [_psim.Simulation(**s) for s in simulations]
@@ -20,4 +22,13 @@ class ServerClient:
             }
             return result
 
-
+    async def set_simulation_state(
+        self, simulation_id: str, state: _psim.SimulationState
+    ) -> _psim.UpdateSimulation:
+        params = {"state": state.value}
+        async with self._session.patch(
+            f"simulations/{simulation_id}", json="", params=params
+        ) as response:
+            response.raise_for_status()
+            json = await response.json()
+            return _psim.UpdateSimulation(**json)

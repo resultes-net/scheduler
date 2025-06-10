@@ -63,7 +63,15 @@ async def loop(
 
                 for _, simulations in simulations_by_user_id.items():
                     for simulation in simulations:
-                        coroutine = create_variations(runner_client, simulation)
+                        assert simulation.id
+
+                        await server_client.set_simulation_state(
+                            simulation.id, _psim.SimulationState.CREATING_VARIATIONS
+                        )
+
+                        coroutine = create_variations(
+                            simulation, runner_client, server_client
+                        )
                         task_group.create_task(coroutine)
 
                 await _sleep_until(next_wakeup_time)
@@ -79,11 +87,19 @@ async def loop(
 
 
 async def create_variations(
-    runner_client: _rc.RunnerClient, simulation: _psim.Simulation
+    simulation: _psim.Simulation,
+    runner_client: _rc.RunnerClient,
+    server_client: _sc.ServerClient,
 ) -> None:
-    simulation_id = _secs.token_hex(nbytes=4)
+    simulation_id = simulation.id
+    assert simulation_id
+
     variation_ids_or_empty = await runner_client.create_variations(
         simulation_id, simulation.parameters
+    )
+
+    await server_client.set_simulation_state(
+        simulation_id, _psim.SimulationState.WAITING_FOR_VARIATION_RUNS
     )
 
     if variation_ids_or_empty:
