@@ -25,10 +25,10 @@ class ServerClient:
     async def set_simulation_state(
         self, simulation_id: str, state: _psim.SimulationState
     ) -> _psim.UpdateSimulation:
-        params = {"state": state.value}
+        request_json = {"state": state.value}
         async with self._session.patch(
-            f"simulations/{simulation_id}", json="", params=params
+            f"simulations/{simulation_id}", json=request_json
         ) as response:
             response.raise_for_status()
-            json = await response.json()
-            return _psim.UpdateSimulation(**json)
+            response_json = await response.json()
+            return _psim.UpdateSimulation(**response_json)
