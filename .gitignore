@@ -11,3 +11,4 @@ node_modules/
 build/
 generated_client/
 openapitools.json
+.env

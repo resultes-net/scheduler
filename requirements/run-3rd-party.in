@@ -4,6 +4,6 @@ aiohttp
 jsonrpcclient
 pydantic
 
-python-openstackclient
-python-heatclient
 python-novaclient
+python-neutronclient
+python-openstacksdk

@@ -1,12 +1,12 @@
 [submodule "resultes-dev-utils"]
 	path = dev-utils
 	url = https://github.com/resultes-net/dev-utils.git
-[submodule "openapi-schema"]
-	path = openapi-schema
-	url = https://github.com/resultes-net/openapi-schema.git
 [submodule "pydantic-models"]
 	path = pydantic-models
 	url = https://github.com/resultes-net/pydantic-models.git
 [submodule "docker-utils"]
 	path = docker-utils
 	url = https://github.com/resultes-net/docker-utils.git
+[submodule "openstack-utils"]
+	path = openstack-utils
+	url = https://github.com:resultes-net/openstack-utils.git
