@@ -2,7 +2,6 @@ clouds:
   openstack:
     auth:
       auth_url: https://api.pub1.infomaniak.cloud/identity/v3
-      password: ''
       project_domain_name: default
       project_name: PCP-4GXOPDF
       user_domain_name: default

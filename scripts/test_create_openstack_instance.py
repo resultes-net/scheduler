@@ -1,103 +1,72 @@
+import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
-import typing as _tp
+import os as _os
 
-import neutronclient.v2_0.client as _ntv2c
-import novaclient.client as _nvc
-import novaclient.v2.client as _nvv2c
-import resultes_openstack_utils.clouds_yaml as _cyaml
-import resultes_openstack_utils.keystone as _ks
+import openstack as _ost
+import openstack.connection as _oconn
+import pytest as _pt
 
 VERSION = "2.1"
 
 
+@_ctx.contextmanager
+def create_connection() -> _cabc.Iterator[_oconn.Connection]:
+    os_password = _os.environ["OS_PASSWORD"]
+    connection = _ost.connect("openstack", os_password=os_password)
+    yield connection
+    connection.close()
+
+
+def test_get_connection() -> None:
+    with create_connection() as connection:
+        pass
+
+
 def test_get_servers() -> None:
-    with create_nova_client() as client:
-        servers = client.servers.list()
-        print(servers)
+    with create_connection() as connection:
+        servers = connection.compute.servers()
+        for server in servers:
+            print(server)
+
+            for network_name, addresses in server.addresses.items():
+                address = addresses[0]["addr"]
+                print(address)
 
 
-def test_create_server() -> None:
-    with create_nova_client() as nova:
-        flavor = nova.flavors.find(name="a8-ram16-disk50-perf1")
-        image = nova.glance.find_image("build-image-server")
+@_pt.mark.asyncio
+async def test_create_server() -> None:
+    with create_connection() as connection:
+        image = connection.image.find_image("build-image-server")
+        flavor = connection.compute.find_flavor("a8-ram16-disk50-perf1")
 
-        with create_neutron_client() as neutron:
-            network = _get_network(neutron)
+        network_name = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
+        network = connection.network.find_network(network_name)
 
-            nic = {"net-id": network["id"]}
-
-        server = nova.servers.create(
+        server = connection.compute.create_server(
             name="runner",
-            image=image,
-            flavor=flavor,
-            nics=[nic],
-            security_groups=["runner"],
-            availability_zone="az-2"
+            image_id=image.id,
+            flavor_id=flavor.id,
+            networks=[{"uuid": network.id}],
+            security_groups=[{"name": "runner"}],
+            availability_zone="az-2",
         )
 
-        print(server)
+    async with _asyncio.timeout(delay=60):
+        while True:
+            server = connection.compute.find_server(server.id)
+
+            if server.addresses:
+                ip_address = server.addresses[network_name][0]["addr"]
+                print(ip_address)
+                return
+
+            await _asyncio.sleep(delay=5.0)
 
 
-def test_delete_server() -> None:
-    with create_nova_client() as nova:
-        server = nova.servers.find(
-            name="runner",
-        )
-        
-        nova.servers.delete(server)
-
-
-def _get_network(client: _ntv2c.Client) -> _cabc.Mapping[str, _tp.Any]:
-    networks = client.list_networks(
-        name="k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
-    )
-    network = networks["networks"][0]
-    return network
-
-
-def _get_security_group(client: _ntv2c.Client) -> _cabc.Mapping[str, _tp.Any]:
-    security_groups = client.list_security_groups(name="runner")
-    security_group = security_groups["security_groups"][0]
-    return security_group
-
-
-def test_get_neutron_dicts():
-    with create_neutron_client() as client:
-        network = _get_network(client)
-        print(network)
-
-        security_group = _get_security_group(client)
-        print(security_group)
-
-
-@_ctx.contextmanager
-def create_nova_client() -> _cabc.Iterator[_nvv2c.Client]:
-    with _get_openstack_clients_kwargs() as kwargs:
-        client: _nv2c.Client = _nvc.Client(
-            VERSION,
-            **kwargs,
-        )
-
-        yield client
-
-
-@_ctx.contextmanager
-def create_neutron_client() -> _cabc.Iterator[_ntv2c.Client]:
-    with _get_openstack_clients_kwargs() as kwargs:
-        client = _ntv2c.Client(**kwargs)
-        yield client
-
-
-@_ctx.contextmanager
-def _get_openstack_clients_kwargs() -> _cabc.Iterator[_cabc.Mapping[str, _tp.Any]]:
-    data = _cyaml.get_clouds_yaml_openstack_json()
-    auth = _ks.create_password()
-
-    with _ks.create_session(auth) as session:
-        kwargs = {"session": session, "region_name": data["region_name"]}
-        yield kwargs
-
-
-if __name__ == "__main__":
-    test_create_server()
+def test_delete_servers() -> None:
+    with create_connection() as connection:
+        servers = connection.compute.servers(name="runner")
+        for server in servers:
+            print(f"Deleting server {server.id}")
+            connection.compute.delete_server(server)
