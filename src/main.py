@@ -3,7 +3,6 @@ import datetime as _dt
 import logging as _log
 import os as _os
 import pprint as _pprint
-import secrets as _secs
 import signal as _sig
 import socket as _soc
 import typing as _tp
@@ -12,6 +11,7 @@ import aiohttp as _ahttp
 import resultes_pydantic_models.simulations.simulation as _psim
 
 import runner_client as _rc
+import runners as _run
 import server_client as _sc
 
 PERIOD_SECONDS = 60.0
@@ -41,11 +41,13 @@ async def terminate_task_group() -> _tp.NoReturn:
 
 async def loop(
     server_client: _sc.ServerClient,
-    runner_client: _rc.RunnerClient,
+    runner_manager: _run.AbstractRunnerManager,
 ) -> None:
     _log.info("Scheduler started.")
 
     next_wakeup_time = _dt.datetime.now() + PERIOD
+
+    tasks_by_runner_ip_address = dict[str, _asyncio.Task[None]]()
 
     try:
         async with _asyncio.TaskGroup() as task_group:
@@ -128,15 +130,15 @@ async def _sleep_until(wakeup_time: _dt.datetime) -> None:
     await _asyncio.sleep(seconds_to_sleep)
 
 
-async def main(server_base_uri: str, runner_base_uri: str) -> None:
-    async with _ahttp.ClientSession(server_base_uri) as server_session:
-        server_client = _sc.ServerClient(server_session)
+async def main(server_base_uri: str, runner_manager: _run.RunnerManager) -> None:
+    runner_manager.delete_servers()
 
-        async with _ahttp.ClientSession(runner_base_uri) as runner_session:
-            async with runner_session.ws_connect("/") as websocket:
-                async with _rc.RunnerClient(websocket) as runner_client:
-
-                    await loop(server_client, runner_client)
+    try:
+        async with _ahttp.ClientSession(server_base_uri) as server_session:
+            server_client = _sc.ServerClient(server_session)
+            await loop(server_client, runner_manager)
+    finally:
+        runner_manager.delete_servers()
 
 
 if __name__ == "__main__":
@@ -144,14 +146,19 @@ if __name__ == "__main__":
     server_port = int(_os.environ.get("SERVER_PORT", "8000"))
     server_base_uri = f"ws://{server_host}:{server_port}/"
 
-    runner_host_dev = f"{_soc.gethostname()}.local"
-    runner_host = _os.environ.get("RUNNER_HOST", runner_host_dev)
     runner_port = int(_os.environ.get("RUNNER_PORT", "3000"))
-    runner_base_uri = f"ws://{runner_host}:{runner_port}/"
+
+    shall_use_openstack = _os.environ.get("USE_OPENSTACK", "0")
+    if shall_use_openstack:
+        runner_manager = _run.RunnerManager()
+    else:
+        host = f"{_soc.gethostname()}.local"
+        ip_address = _soc.gethostbyname(host)
+        runner_manager = _run.DummyRunnerManager(ip_address)
 
     log_level = _os.environ.get("LOG_LEVEL", "INFO")
 
     _log.basicConfig(format=LOG_FORMAT, level=log_level)
     _log.info("Starting scheduler...")
 
-    _asyncio.run(main(server_base_uri, runner_base_uri))
+    _asyncio.run(main(server_base_uri, runner_manager))
