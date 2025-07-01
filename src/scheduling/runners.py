@@ -1,26 +1,12 @@
 import collections.abc as _cabc
 import dataclasses as _dc
-import datetime as _dt
 
-import resultes_pydantic_models.common as _rpmc
-
-
-@_dc.dataclass
-class Job:
-    id: str
-    user_id: str
-    created_on: _dt.datetime = _dc.field(default_factory=_rpmc.utc_now)
-
-    def __post_init__(self) -> None:
-        if not _rpmc.is_timezone_aware_in_past(self.created_on):
-            raise ValueError(
-                "Created on datetime must be in past and have explicit time zone information."
-            )
+from . import common as _com
 
 
 @_dc.dataclass
 class _RunningJob:
-    job: Job
+    job: _com.Job
     runner: "_Runner"
 
 
@@ -28,7 +14,7 @@ class _RunningJob:
 class _Runner:
     ip_address: str
     n_max_jobs: int
-    assigned_jobs: list[_RunningJob] = []
+    assigned_jobs: list[_RunningJob] = _dc.field(default_factory=lambda: [])
 
     def n_jobs(self) -> int:
         return len(self.assigned_jobs)
@@ -45,13 +31,16 @@ class Runners:
         self._runners = list[_Runner]()
 
     def have_all_runners_max_jobs(self) -> bool:
+        if not self._runners:
+            return True
+        
         return all(r.have_max_jobs() for r in self._runners)
 
     def add_runner(self, ip_address: str, n_max_jobs: int) -> None:
         runner = _Runner(ip_address, n_max_jobs)
         self._runners.append(runner)
 
-    def add_job_and_get_handling_runner_ip_address(
+    def start_job_and_get_handling_runner_ip_address(
         self, job_id: str, user_id: str
     ) -> str:
         if self.have_all_runners_max_jobs():
@@ -61,7 +50,7 @@ class Runners:
             self._get_runner_with_fewest_free_job_slots()
         )
 
-        job = Job(job_id, user_id)
+        job = _com.Job(job_id, user_id)
         self._assign_job(job, runner_with_most_fewest_free_job_slots)
 
         return runner_with_most_fewest_free_job_slots.ip_address
@@ -75,11 +64,11 @@ class Runners:
 
         runner_with_fewest_free_job_slots = sorted_runners_with_free_job_slot[0]
 
-        assert not runner_with_fewest_free_job_slots.have_max_jobs
+        assert not runner_with_fewest_free_job_slots.have_max_jobs()
 
         return runner_with_fewest_free_job_slots
 
-    def _assign_job(self, job: Job, runner: _Runner) -> None:
+    def _assign_job(self, job: _com.Job, runner: _Runner) -> None:
         assigned_job = _RunningJob(job, runner)
         runner.assigned_jobs.append(assigned_job)
 

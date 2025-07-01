@@ -1,6 +1,6 @@
 import pytest as _pt
 
-import runners as _run
+import runner_manager as _run
 
 VERSION = "2.1"
 

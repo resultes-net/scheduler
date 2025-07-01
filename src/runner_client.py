@@ -24,8 +24,17 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
             int, _asyncio.Future[_jrpcl.responses.Response]
         ]()
 
-    async def __aenter__(self) -> _tp.Self:
+    def start(self) -> None:
         self._task = _asyncio.create_task(self._response_reader())
+
+    def stop(self) -> None:
+        if not self._task:
+            raise RuntimeError("Client not running.")
+
+        self._task.cancel()
+
+    async def __aenter__(self) -> _tp.Self:
+        self.start()
         return self
 
     async def __aexit__(
@@ -34,10 +43,7 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
         exc_value,
         traceback,
     ) -> bool:
-        if not self._task:
-            raise RuntimeError("Client not running.")
-
-        self._task.cancel()
+        self.stop()
 
         # Don't ignore exception that caused this method to be called
         return False
@@ -120,5 +126,5 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
         self._parsed_response_futures_by_request_id[request_id] = future
 
         yield future
-        
+
         del self._parsed_response_futures_by_request_id[request_id]

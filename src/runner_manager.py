@@ -9,6 +9,11 @@ import openstack.connection as _oconn
 
 
 class AbstractRunnerManager(_abc.ABC):
+    @property
+    @_abc.abstractmethod
+    def n_max_jobs_per_runner(self) -> int:
+        raise NotImplementedError()
+
     @_abc.abstractmethod
     async def create_server_and_get_ip(self) -> str:
         raise NotImplementedError()
@@ -19,16 +24,12 @@ class AbstractRunnerManager(_abc.ABC):
 
 
 class RunnerManager(AbstractRunnerManager):
-    @_ctx.contextmanager
-    @staticmethod
-    def create_connection() -> _cabc.Iterator[_oconn.Connection]:
-        os_password = _os.environ["OS_PASSWORD"]
-        connection = _ost.connect("openstack", os_password=os_password)
-        yield connection
-        connection.close()
+    @property
+    def n_max_jobs_per_runner(self) -> int:
+        return 8
 
     async def create_server_and_get_ip(self) -> str:
-        with self.create_connection() as connection:
+        with _create_connection() as connection:
             image = connection.image.find_image("build-image-server")
             flavor = connection.compute.find_flavor("a8-ram16-disk50-perf1")
 
@@ -44,7 +45,7 @@ class RunnerManager(AbstractRunnerManager):
                 availability_zone="az-2",
             )
 
-        async with _asyncio.timeout(delay=60):
+        async with _asyncio.timeout(delay=120):
             while True:
                 server = connection.compute.find_server(server.id)
 
@@ -55,8 +56,8 @@ class RunnerManager(AbstractRunnerManager):
                 await _asyncio.sleep(delay=5.0)
 
     def delete_servers(self, ip_address: str | None = None) -> None:
-        with create_connection() as connection:
-            kwargs = {name: "runner"}
+        with _create_connection() as connection:
+            kwargs = {"name": "runner"}
             if ip_address:
                 kwargs["ip"] = ip_address
 
@@ -65,9 +66,22 @@ class RunnerManager(AbstractRunnerManager):
                 connection.compute.delete_server(server)
 
 
+@_ctx.contextmanager
+def _create_connection() -> _cabc.Iterator[_oconn.Connection]:
+    os_password = _os.environ["OS_PASSWORD"]
+    connection = _ost.connect("openstack", os_password=os_password)
+    yield connection
+    connection.close()
+
+
 class DummyRunnerManager(AbstractRunnerManager):
-    def __init__(self, ip_address: str) -> None:
+    def __init__(self, ip_address: str, n_max_jobs_per_runner: int) -> None:
         self._ip_address = ip_address
+        self._n_max_jobs_per_runner = n_max_jobs_per_runner
+
+    @property
+    def n_max_jobs_per_runner(self) -> int:
+        return self._n_max_jobs_per_runner
 
     async def create_server_and_get_ip(self) -> str:
         return self._ip_address
