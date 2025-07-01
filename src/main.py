@@ -222,9 +222,28 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         _log.info("Creating new runner...")
         ip_address = await self._runner_manager.create_server_and_get_ip()
         _log.info("...DONE. New runner with ip address %s created.", ip_address)
-        runner_client_wrapper = await _RunnerClientWrapper.create(ip_address)
+        runner_client_wrapper = await self._create_client_wrapper(ip_address)
         self._runner_client_wrappers_by_ip_address[ip_address] = runner_client_wrapper
         self._runners.add_runner(ip_address, self._runner_manager.n_max_jobs_per_runner)
+
+    async def _create_client_wrapper(self, ip_address: str) -> _RunnerClientWrapper:
+        _log.info("Trying to create to runner %s...", ip_address)
+
+        end = 60.0
+        async for _ in _wake_up_every(seconds=5, end=end):
+            try:
+                client_wrapper = await _RunnerClientWrapper.create(ip_address)
+                _log.info("...DONE trying to connect to runner %s.", ip_address)
+                return client_wrapper
+            except _ahttp.ClientConnectionError:
+                pass
+
+        _log.error(
+            "...TIMED OUT trying to connect to runner %s after %f second(s).",
+            ip_address,
+            end,
+        )
+        raise _asyncio.TimeoutError()
 
     @staticmethod
     async def _sleep_until(
@@ -242,6 +261,17 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         seconds_to_sleep = (wakeup_time - now).seconds
 
         await _asyncio.sleep(seconds_to_sleep)
+
+
+async def _wake_up_every(seconds: float, end: float) -> _cabc.AsyncIterable[None]:
+    if end < 0:
+        raise ValueError("End must be >= 0.", end)
+
+    current = 0.0
+    while current < end:
+        yield
+        await _asyncio.sleep(seconds)
+        current += seconds
 
 
 async def main(
