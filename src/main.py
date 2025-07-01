@@ -4,6 +4,7 @@ import contextlib as _ctx
 import datetime as _dt
 import logging as _log
 import os as _os
+import pathlib as _pl
 import pprint as _pprint
 import signal as _sig
 import socket as _soc
@@ -308,9 +309,12 @@ if __name__ == "__main__":
     shall_use_openstack = int(_os.environ.get("USE_OPENSTACK", "0"))
     runner_manager: _run.AbstractRunnerManager
     if shall_use_openstack:
-        _log.info("Using OpenStack runner manager.")
+        clouds_yaml_file_path = _pl.Path(__file__).parents[1] / "config" / "clouds.yaml"
+        _log.info("Using OpenStack runner manager with config file %s.", clouds_yaml_file_path)
+
         os_password = _os.environ["OS_PASSWORD"]
-        runner_manager = _run.RunnerManager(os_password)
+        
+        runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
     else:
         _log.info("Using dummy runner manager.")
         host = f"{_soc.gethostname()}.local"
