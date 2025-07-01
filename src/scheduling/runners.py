@@ -1,5 +1,6 @@
 import collections.abc as _cabc
 import dataclasses as _dc
+import itertools as _it
 
 from . import common as _com
 
@@ -26,14 +27,28 @@ class _Runner:
         return self.n_jobs() == 0
 
 
-class Runners:
+class RunnersScheduler:
     def __init__(self) -> None:
         self._runners = list[_Runner]()
+
+    def get_n_jobs(self, user_id: str) -> int:
+        jobs = [a.job for r in self._runners for a in r.assigned_jobs]
+
+        def get_user_id(job: _com.Job) -> str:
+            return job.user_id
+
+        n_jobs_by_user_id = {
+            k: len(list(js)) for k, js in _it.groupby(jobs, key=get_user_id)
+        }
+
+        n_jobs_for_user_id = n_jobs_by_user_id.get(user_id, 0)
+
+        return n_jobs_for_user_id
 
     def have_all_runners_max_jobs(self) -> bool:
         if not self._runners:
             return True
-        
+
         return all(r.have_max_jobs() for r in self._runners)
 
     def add_runner(self, ip_address: str, n_max_jobs: int) -> None:

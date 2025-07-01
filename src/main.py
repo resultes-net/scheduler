@@ -1,4 +1,5 @@
 import asyncio as _asyncio
+import collections.abc as _cabc
 import contextlib as _ctx
 import datetime as _dt
 import logging as _log
@@ -14,6 +15,7 @@ import resultes_pydantic_models.simulations.simulation as _psim
 import runner_client as _rc
 import runner_manager as _run
 import scheduling.runners as _sr
+import scheduling.users as _usr
 import server_client as _sc
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
@@ -80,7 +82,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self._server_client = server_client
         self._runner_manager = runner_manager
         self._runner_client_wrappers_by_ip_address = dict[str, _RunnerClientWrapper]()
-        self._runners = _sr.Runners()
+        self._runners = _sr.RunnersScheduler()
 
     async def __aenter__(self) -> _tp.Self:
         return self
@@ -114,16 +116,22 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                         data,
                     )
 
-                    for _, simulations in simulations_by_user_id.items():
-                        for simulation in simulations:
-                            assert simulation.id
+                    users_scheduler = self._create_users_scheduler(
+                        simulations_by_user_id
+                    )
 
-                            await self._server_client.set_simulation_state(
-                                simulation.id, _psim.SimulationState.CREATING_VARIATIONS
-                            )
+                    while users_scheduler.has_next_simulation():
+                        next_simulation = users_scheduler.pop_next_simulation()
 
-                            coroutine = self._create_variations(simulation)
-                            task_group.create_task(coroutine)
+                        assert next_simulation.id
+
+                        await self._server_client.set_simulation_state(
+                            next_simulation.id,
+                            _psim.SimulationState.CREATING_VARIATIONS,
+                        )
+
+                        coroutine = self._create_variations(next_simulation)
+                        task_group.create_task(coroutine)
 
                     await self._delete_any_idle_runners()
 
@@ -137,6 +145,20 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         except* TerminateTaskGroup:
             pass
+
+    def _create_users_scheduler(
+        self,
+        simulations_by_user_id: _cabc.Mapping[str, _cabc.Sequence[_psim.Simulation]],
+    ) -> _usr.UsersScheduler:
+        users = [self._create_user(k, ss) for k, ss in simulations_by_user_id.items()]
+        users_scheduler = _usr.UsersScheduler(users)
+        return users_scheduler
+
+    def _create_user(
+        self, user_id: str, simulations: _cabc.Sequence[_psim.Simulation]
+    ) -> _usr.User:
+        n_jobs = self._runners.get_n_jobs(user_id)
+        return _usr.User(n_jobs, simulations)
 
     async def _delete_any_idle_runners(self):
         idle_runner_ip_addresses = self._runners.get_idle_runner_ip_addresses()
