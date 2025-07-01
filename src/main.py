@@ -4,7 +4,6 @@ import contextlib as _ctx
 import datetime as _dt
 import logging as _log
 import os as _os
-import pathlib as _pl
 import pprint as _pprint
 import signal as _sig
 import socket as _soc
@@ -273,16 +272,6 @@ if __name__ == "__main__":
 
     runner_port = int(_os.environ.get("RUNNER_PORT", "3000"))
 
-    clouds_yaml_file_path = _os.environ.get("OS_CLIENT_CONFIG_FILE")
-    if not clouds_yaml_file_path:
-        default_clouds_yaml_file_path = (
-            _pl.Path(__file__).parents[1] / "config" / "clouds.yaml"
-        )
-        clouds_yaml_file_path = str(default_clouds_yaml_file_path)
-        _os.environ["OS_CLIENT_CONFIG_FILE"] = clouds_yaml_file_path
-
-    _log.info("Using OpenStack configuration at %s.", clouds_yaml_file_path)
-
     polling_period_seconds = int(_os.environ.get("POLLING_PERIOD_SECONDS", "3"))
     _log.info("Polling period (seconds): %i", polling_period_seconds)
 
@@ -290,7 +279,8 @@ if __name__ == "__main__":
     runner_manager: _run.AbstractRunnerManager
     if shall_use_openstack:
         _log.info("Using OpenStack runner manager.")
-        runner_manager = _run.RunnerManager()
+        os_password = _os.environ["OS_PASSWORD"]
+        runner_manager = _run.RunnerManager(os_password)
     else:
         _log.info("Using dummy runner manager.")
         host = f"{_soc.gethostname()}.local"

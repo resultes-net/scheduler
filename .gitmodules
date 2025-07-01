@@ -7,3 +7,6 @@
 [submodule "docker-utils"]
 	path = docker-utils
 	url = https://github.com/resultes-net/docker-utils.git
+[submodule "openstack-utils"]
+	path = openstack-utils
+	url = https://github.com/resultes-net/openstack-utils.git

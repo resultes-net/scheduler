@@ -2,10 +2,11 @@ import abc as _abc
 import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
-import os as _os
+import pathlib as _pl
 
 import openstack as _ost
 import openstack.connection as _oconn
+import resultes_openstack_utils.clouds_yaml as _cyaml
 
 
 class AbstractRunnerManager(_abc.ABC):
@@ -24,12 +25,20 @@ class AbstractRunnerManager(_abc.ABC):
 
 
 class RunnerManager(AbstractRunnerManager):
+    def __init__(self, os_password: str, clouds_yaml_file_path: _pl.Path | None = None) -> None:
+        self._os_password = os_password
+        self._clouds_yaml_file_path = (
+            clouds_yaml_file_path
+            if clouds_yaml_file_path
+            else _cyaml.get_clouds_yaml_file_path()
+        )
+
     @property
     def n_max_jobs_per_runner(self) -> int:
         return 8
 
     async def create_server_and_get_ip(self) -> str:
-        with _create_connection() as connection:
+        with self._create_connection() as connection:
             image = connection.image.find_image("build-image-server")
             flavor = connection.compute.find_flavor("a8-ram16-disk50-perf1")
 
@@ -56,7 +65,7 @@ class RunnerManager(AbstractRunnerManager):
                 await _asyncio.sleep(delay=5.0)
 
     def delete_servers(self, ip_address: str | None = None) -> None:
-        with _create_connection() as connection:
+        with self._create_connection() as connection:
             kwargs = {"name": "runner"}
             if ip_address:
                 kwargs["ip"] = ip_address
@@ -65,13 +74,20 @@ class RunnerManager(AbstractRunnerManager):
             for server in servers:
                 connection.compute.delete_server(server)
 
+    @_ctx.contextmanager
+    def _create_connection(self) -> _cabc.Iterator[_oconn.Connection]:
+        data = _cyaml.get_clouds_yaml_openstack_json(self._clouds_yaml_file_path)
 
-@_ctx.contextmanager
-def _create_connection() -> _cabc.Iterator[_oconn.Connection]:
-    os_password = _os.environ["OS_PASSWORD"]
-    connection = _ost.connect("openstack", os_password=os_password)
-    yield connection
-    connection.close()
+        connection = _ost.connect(
+            load_yaml_config=False,
+            load_envvars=False,
+            os_password=self._os_password,
+            **data,
+        )
+
+        yield connection
+
+        connection.close()
 
 
 class DummyRunnerManager(AbstractRunnerManager):
