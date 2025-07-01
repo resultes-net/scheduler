@@ -30,6 +30,8 @@ spec:
               value: 172.21.0.115
             - name: RUNNER_PORT
               value: "3000"
+            - name: POLLING_PERIOD_SECONDS
+              value: "30"
             - name: USE_OPENSTACK
               value: "1"
             - name: OS_PASSWORD
