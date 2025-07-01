@@ -55,8 +55,14 @@ class _RunnerClientWrapper:
     @staticmethod
     async def create(ip_address: str) -> "_RunnerClientWrapper":
         base_uri = f"http://{ip_address}:3000/"
+
         session = _ahttp.ClientSession(base_uri)
-        websocket = await session.ws_connect("/")
+        try:
+            websocket = await session.ws_connect("/")
+        except:
+            await session.close()
+            raise
+
         client = _rc.RunnerClient(websocket)
         client.start()
         return _RunnerClientWrapper(session, websocket, client)
@@ -228,8 +234,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self._runners.add_runner(ip_address, self._runner_manager.n_max_jobs_per_runner)
 
     async def _create_client_wrapper(self, ip_address: str) -> _RunnerClientWrapper:
-        _log.info("Trying to create to runner %s...", ip_address)
+        _log.info("Trying to connect to runner %s...", ip_address)
 
+        seconds = 5.0
         end = 60.0
         async for _ in _wake_up_every(seconds=5, end=end):
             try:
@@ -237,7 +244,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                 _log.info("...DONE trying to connect to runner %s.", ip_address)
                 return client_wrapper
             except _ahttp.ClientConnectionError:
-                pass
+                _log.info("...FAILED. Trying again in %f second(s).", seconds)
 
         _log.error(
             "...TIMED OUT trying to connect to runner %s after %f second(s).",
@@ -268,11 +275,11 @@ async def _wake_up_every(seconds: float, end: float) -> _cabc.AsyncIterable[None
     if end < 0:
         raise ValueError("End must be >= 0.", end)
 
-    current = 0.0
-    while current < end:
+    end_time = _dt.datetime.now() + _dt.timedelta(seconds=end)
+
+    while _dt.datetime.now() < end_time:
         yield
         await _asyncio.sleep(seconds)
-        current += seconds
 
 
 async def main(
@@ -310,10 +317,12 @@ if __name__ == "__main__":
     runner_manager: _run.AbstractRunnerManager
     if shall_use_openstack:
         clouds_yaml_file_path = _pl.Path(__file__).parents[1] / "config" / "clouds.yaml"
-        _log.info("Using OpenStack runner manager with config file %s.", clouds_yaml_file_path)
+        _log.info(
+            "Using OpenStack runner manager with config file %s.", clouds_yaml_file_path
+        )
 
         os_password = _os.environ["OS_PASSWORD"]
-        
+
         runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
     else:
         _log.info("Using dummy runner manager.")
