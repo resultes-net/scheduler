@@ -4,6 +4,7 @@ import contextlib as _ctx
 import datetime as _dt
 import logging as _log
 import os as _os
+import pathlib as _pl
 import pprint as _pprint
 import signal as _sig
 import socket as _soc
@@ -272,6 +273,17 @@ if __name__ == "__main__":
 
     shall_use_openstack = int(_os.environ.get("USE_OPENSTACK", "0"))
     runner_port = int(_os.environ.get("RUNNER_PORT", "3000"))
+
+    overriden_clouds_yaml_file_path = _os.environ.get("OS_CLIENT_CONFIG_FILE")
+    default_clouds_yaml_file_path = (
+        _pl.Path(__file__).parents[1] / "config" / "cloud.yaml"
+    )
+    clouds_yaml_file_path = (
+        overriden_clouds_yaml_file_path
+        if overriden_clouds_yaml_file_path
+        else default_clouds_yaml_file_path
+    )
+    _log.info("Using OpenStack configuration at %s.", clouds_yaml_file_path)
 
     polling_period_seconds = int(_os.environ.get("POLLING_PERIOD_SECONDS", "3"))
     _log.info("Polling period (seconds): %i", polling_period_seconds)
