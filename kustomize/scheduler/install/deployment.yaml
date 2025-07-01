@@ -30,6 +30,8 @@ spec:
               value: 172.21.0.115
             - name: RUNNER_PORT
               value: "3000"
+            - name: USE_OPENSTACK
+              value: "1"
                             
       imagePullSecrets:
         - name: read-ghcr-io-auth-secret
