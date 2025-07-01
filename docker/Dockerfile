@@ -11,6 +11,7 @@ RUN docker-utils/uv-pip-install.sh -r requirements/run-3rd-party.txt
 FROM pip-dependencies
 
 COPY pydantic-models pydantic-models
+COPY openstack-utils openstack-utils
 RUN docker-utils/uv-pip-install.sh -r requirements/run.txt
 
 COPY config/clouds.yaml config/clouds.yaml
