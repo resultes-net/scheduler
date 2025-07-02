@@ -90,6 +90,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self._runner_manager = runner_manager
         self._runner_client_wrappers_by_ip_address = dict[str, _RunnerClientWrapper]()
         self._runners = _sr.RunnersScheduler()
+        self._lock = _asyncio.Lock()
 
     async def __aenter__(self) -> _tp.Self:
         return self
@@ -183,8 +184,10 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         simulation_id = simulation.id
         assert simulation_id
 
-        if self._runners.have_all_runners_max_jobs():
-            await self._create_new_runner()
+        # Ensure no other job creates a new runner at the same time.
+        async with self._lock:
+            if self._runners.have_all_runners_max_jobs():
+                await self._create_new_runner()
 
         runner_client = self._start_job_and_get_handling_runner_client(
             simulation_id=simulation_id, user_id=simulation.user_id
@@ -333,4 +336,6 @@ if __name__ == "__main__":
         host = f"{_soc.gethostname()}.local"
         runner_manager = _run.DummyRunnerManager(host, n_max_jobs_per_runner=512)
 
-    _asyncio.run(main(server_base_uri, runner_manager, polling_period_seconds))
+    coroutine = main(server_base_uri, runner_manager, polling_period_seconds)
+
+    _asyncio.run(coroutine)
