@@ -236,22 +236,26 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     async def _create_client_wrapper(self, ip_address: str) -> _RunnerClientWrapper:
         _log.info("Trying to connect to runner %s...", ip_address)
 
-        seconds = 5.0
-        end = 60.0
-        async for _ in _wake_up_every(seconds=5, end=end):
-            try:
-                client_wrapper = await _RunnerClientWrapper.create(ip_address)
-                _log.info("...DONE trying to connect to runner %s.", ip_address)
-                return client_wrapper
-            except _ahttp.ClientConnectionError:
-                _log.info("...FAILED. Trying again in %f second(s).", seconds)
-
-        _log.error(
-            "...TIMED OUT trying to connect to runner %s after %f second(s).",
-            ip_address,
-            end,
-        )
-        raise _asyncio.TimeoutError()
+        seconds_to_sleep = 5.0
+        timeout = 120.0
+        try:
+            async with _asyncio.timeout(timeout):
+                while True:
+                    try:
+                        client_wrapper = await _RunnerClientWrapper.create(ip_address)
+                        _log.info("...DONE trying to connect to runner %s.", ip_address)
+                        return client_wrapper
+                    except _ahttp.ClientConnectionError:
+                        _log.info("...FAILED. Trying again in %f second(s).", seconds_to_sleep)
+                    
+                    await _asyncio.sleep(seconds_to_sleep)
+        except TimeoutError:
+            _log.error(
+                "...TIMED OUT trying to connect to runner %s after %f second(s).",
+                ip_address,
+                timeout,
+            )
+            raise
 
     @staticmethod
     async def _sleep_until(

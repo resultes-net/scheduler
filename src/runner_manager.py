@@ -73,9 +73,7 @@ class RunnerManager(AbstractRunnerManager):
         ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
         return ip_address
 
-    def delete_servers(self, ip_address: str | None = None) -> None:
-        return
-    
+    def delete_servers(self, ip_address: str | None = None) -> None: 
         _log.info("Deleting servers...")
 
         with self._create_connection() as connection:
