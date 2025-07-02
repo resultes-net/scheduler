@@ -89,7 +89,7 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
         runner_job = _mpytrnsys.RunnerJob(
             id=simulation_id,
             object_storage_path=_mpytrnsys.ObjectStorageZipPath(
-                container="resultes",
+                container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
             script_to_run="systems-main/TTES/run.pytrnsys",
