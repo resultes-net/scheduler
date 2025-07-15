@@ -26,8 +26,9 @@ class ServerClient:
     async def set_simulation_state(
         self, simulation_id: str, new_state: _psim.SimulationState
     ) -> None:
+        params = {"new_state": new_state.value}
         async with self._session.put(
-            f"simulations/{simulation_id}/state", json=new_state.value
+            f"simulations/{simulation_id}/state", params=params
         ) as response:
             response.raise_for_status()
             _ = await response.json()
