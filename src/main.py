@@ -12,6 +12,7 @@ import typing as _tp
 
 import aiohttp as _ahttp
 import resultes_pydantic_models.simulations.simulation as _psim
+import resultes_pydantic_models.simulations.variation as _pvar
 
 import runner_client as _rc
 import runner_manager as _run
@@ -19,7 +20,7 @@ import scheduling.runners as _sr
 import scheduling.users as _usr
 import server_client as _sc
 
-LOG_FORMAT = "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(taskName)s - %(module)s - %(message)s"
 
 _is_shutting_down = False
 
@@ -193,25 +194,38 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             simulation_id=simulation_id, user_id=simulation.user_id
         )
 
-        variation_ids_or_empty = await runner_client.create_variations(
+        relative_deck_file_paths = await runner_client.create_variations(
             simulation_id, simulation.parameters
         )
+
+        if relative_deck_file_paths:
+            for relative_deck_file_path in relative_deck_file_paths:
+                _log.info(
+                    "Creating variation for deck file %s (simulation ID = %s)...",
+                    relative_deck_file_path,
+                    simulation_id,
+                )
+                relative_deck_file_pure_path = _pl.PureWindowsPath(
+                    relative_deck_file_path
+                )
+
+                variation = _pvar.CreateVariation(
+                    simulation_id=simulation_id,
+                    relative_deck_file_path=relative_deck_file_pure_path,
+                )
+
+                await self._server_client.create_variation(simulation_id, variation)
+
+                _log.info("...DONE.")
+
+        else:
+            _log.info("Got empty response to request %s.", simulation_id)
 
         await self._server_client.set_simulation_state(
             simulation_id, _psim.SimulationState.WAITING_FOR_VARIATION_RUNS
         )
 
         self._runners.remove_completed_job(simulation_id)
-
-        if variation_ids_or_empty:
-            formatted_variation_ids = ", ".join(variation_ids_or_empty)
-            _log.info(
-                "The following variations have been created for request %s: %s.",
-                simulation_id,
-                formatted_variation_ids,
-            )
-        else:
-            _log.info("Got empty response to request %s.", simulation_id)
 
     def _start_job_and_get_handling_runner_client(
         self, /, simulation_id: str, user_id: str
@@ -249,8 +263,10 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                         _log.info("...DONE trying to connect to runner %s.", ip_address)
                         return client_wrapper
                     except _ahttp.ClientConnectionError:
-                        _log.info("...FAILED. Trying again in %f second(s).", seconds_to_sleep)
-                    
+                        _log.info(
+                            "...FAILED. Trying again in %f second(s).", seconds_to_sleep
+                        )
+
                     await _asyncio.sleep(seconds_to_sleep)
         except TimeoutError:
             _log.error(
@@ -276,17 +292,6 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         seconds_to_sleep = (wakeup_time - now).seconds
 
         await _asyncio.sleep(seconds_to_sleep)
-
-
-async def _wake_up_every(seconds: float, end: float) -> _cabc.AsyncIterable[None]:
-    if end < 0:
-        raise ValueError("End must be >= 0.", end)
-
-    end_time = _dt.datetime.now() + _dt.timedelta(seconds=end)
-
-    while _dt.datetime.now() < end_time:
-        yield
-        await _asyncio.sleep(seconds)
 
 
 async def main(

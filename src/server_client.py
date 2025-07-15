@@ -2,6 +2,7 @@ import collections.abc as _cabc
 
 import aiohttp as _ahttp
 import resultes_pydantic_models.simulations.simulation as _psim
+import resultes_pydantic_models.simulations.variation as _pvar
 
 
 class ServerClient:
@@ -23,12 +24,21 @@ class ServerClient:
             return result
 
     async def set_simulation_state(
-        self, simulation_id: str, state: _psim.SimulationState
-    ) -> _psim.UpdateSimulation:
-        request_json = {"state": state.value}
-        async with self._session.patch(
-            f"simulations/{simulation_id}", json=request_json
+        self, simulation_id: str, new_state: _psim.SimulationState
+    ) -> None:
+        async with self._session.put(
+            f"simulations/{simulation_id}/state", json=new_state.value
+        ) as response:
+            response.raise_for_status()
+            _ = await response.json()
+
+    async def create_variation(
+        self, simulation_id: str, variation: _pvar.CreateVariation
+    ) -> _pvar.Variation:
+        async with self._session.post(
+            f"simulations/{simulation_id}/variations",
+            json=variation.model_dump(),
         ) as response:
             response.raise_for_status()
             response_json = await response.json()
-            return _psim.UpdateSimulation(**response_json)
+            return _pvar.Variation(**response_json)
