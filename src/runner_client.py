@@ -99,6 +99,15 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
         params = {"runner_job": runner_job.model_dump()}
         json = _jrpcl.request("run_python_script_in_pytrnsys_venv", params)
 
+        return await self._send_request_and_check_response(json)
+
+    async def set_loki_ip_address(self, loki_ip_address: str) -> None:
+        params = {"loki_ip_address": loki_ip_address}
+        json = _jrpcl.request("set_loki_ip_address", params)
+
+        await self._send_request_and_check_response(json)
+
+    async def _send_request_and_check_response(self, json: _tp.Any) -> _tp.Any:
         _LOGGER.debug("Sending request %s.", json)
         await self._websocket.send_json(json)
 
