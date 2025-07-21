@@ -14,6 +14,7 @@ import aiohttp as _ahttp
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
+import clouds_yaml as _cyaml
 import runner_client as _rc
 import runner_manager as _run
 import scheduling.runners as _sr
@@ -328,7 +329,8 @@ if __name__ == "__main__":
     shall_use_openstack = int(_os.environ.get("USE_OPENSTACK", "0"))
     runner_manager: _run.AbstractRunnerManager
     if shall_use_openstack:
-        clouds_yaml_file_path = _pl.Path(__file__).parents[1] / "config" / "clouds.yaml"
+        clouds_yaml_file_path = _cyaml.clouds_yaml_file_path
+
         _log.info(
             "Using OpenStack runner manager with config file %s.", clouds_yaml_file_path
         )

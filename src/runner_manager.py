@@ -30,15 +30,9 @@ class AbstractRunnerManager(_abc.ABC):
 class RunnerManager(AbstractRunnerManager):
     _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
 
-    def __init__(
-        self, os_password: str, clouds_yaml_file_path: _pl.Path | None = None
-    ) -> None:
+    def __init__(self, os_password: str, clouds_yaml_file_path: _pl.Path) -> None:
         self._os_password = os_password
-        self._clouds_yaml_file_path = (
-            clouds_yaml_file_path
-            if clouds_yaml_file_path
-            else _cyaml.get_clouds_yaml_file_path()
-        )
+        self._clouds_yaml_file_path = clouds_yaml_file_path
 
     @property
     def n_max_jobs_per_runner(self) -> int:
@@ -73,7 +67,7 @@ class RunnerManager(AbstractRunnerManager):
         ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
         return ip_address
 
-    def delete_servers(self, ip_address: str | None = None) -> None: 
+    def delete_servers(self, ip_address: str | None = None) -> None:
         _log.info("Deleting servers...")
 
         with self._create_connection() as connection:

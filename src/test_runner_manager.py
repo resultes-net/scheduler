@@ -2,6 +2,7 @@ import os as _os
 
 import pytest as _pt
 
+import clouds_yaml as _cyaml
 import runner_manager as _run
 
 
@@ -14,7 +15,7 @@ async def test_create_server() -> None:
 
 def _create_manager():
     os_password = _os.environ["OS_PASSWORD"]
-    runner_manager = _run.RunnerManager(os_password)
+    runner_manager = _run.RunnerManager(os_password, _cyaml.clouds_yaml_file_path)
     return runner_manager
 
 
