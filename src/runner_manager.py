@@ -2,8 +2,8 @@ import abc as _abc
 import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
-import pathlib as _pl
 import logging as _log
+import pathlib as _pl
 
 import openstack as _ost
 import openstack.connection as _oconn
@@ -68,12 +68,6 @@ class RunnerManager(AbstractRunnerManager):
         return ip_address
 
     def delete_servers(self, ip_address: str | None = None) -> None:
-        if self._keepRunnersAlive():
-            _log.warning(
-                "Not deleting runners because we were told to keep them alive in the scheduler/config-cm configMap."
-            )
-            return
-
         _log.info("Deleting servers...")
 
         with self._create_connection() as connection:
@@ -97,22 +91,6 @@ class RunnerManager(AbstractRunnerManager):
                 connection.compute.delete_server(server)
 
             _log.info("...DONE: %i server(s) deleted.", len(servers))
-
-    @staticmethod
-    def _keepRunnersAlive() -> bool:
-        file_name = "keepRunnersAlive"
-
-        path = _pl.Path(__file__).parents[1] / "config-cm" / file_name
-        value = path.read_text()
-
-        if value == "true":
-            return True
-        elif value == "false":
-            return False
-        else:
-            raise ValueError(
-                f"Expected {file_name} to contain 'true' or 'false' but found {value}."
-            )
 
     @_ctx.contextmanager
     def _create_connection(self) -> _cabc.Iterator[_oconn.Connection]:

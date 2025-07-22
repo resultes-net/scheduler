@@ -15,6 +15,7 @@ import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
 import clouds_yaml as _cyaml
+import config as _config
 import runner_client as _rc
 import runner_manager as _run
 import scheduling.runners as _sr
@@ -172,7 +173,11 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         n_jobs = self._runners.get_n_jobs(user_id)
         return _usr.User(n_jobs, simulations)
 
-    async def _delete_any_idle_runners(self):
+    async def _delete_any_idle_runners(self) -> None:
+        if _config.keepRunnersAlive():
+            _config.log_explanation()
+            return
+
         idle_runner_ip_addresses = self._runners.get_idle_runner_ip_addresses()
         for idle_runner_ip_address in idle_runner_ip_addresses:
             _log.info("Deleting server %s.", idle_runner_ip_address)
@@ -311,7 +316,7 @@ async def main(
     runner_manager: _run.AbstractRunnerManager,
     polling_period_seconds: int,
 ) -> None:
-    runner_manager.delete_servers()
+    _delete_stale_servers(runner_manager)
 
     loki_ip_address = _soc.gethostbyname("loki-gateway.meta.svc.cluster.local")
     _log.info("Using Loki IP address: %s.", loki_ip_address)
@@ -322,6 +327,13 @@ async def main(
             async with Looper(server_client, runner_manager, loki_ip_address) as looper:
                 await looper.loop(polling_period_seconds)
     finally:
+        _delete_stale_servers(runner_manager)
+
+
+def _delete_stale_servers(runner_manager: _run.AbstractRunnerManager):
+    if _config.keepRunnersAlive():
+        _config.log_explanation()
+    else:
         runner_manager.delete_servers()
 
 
