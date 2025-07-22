@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 data:
-  # Set to true using `kubectl` to keep runners around for debugging
-  keepRunnersAlive: false
+  # Set to "true" using `kubectl` to keep runners around for debugging
+  keepRunnersAlive: "false"
 metadata:
   name: config-cm
