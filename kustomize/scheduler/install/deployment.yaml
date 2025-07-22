@@ -39,6 +39,13 @@ spec:
                 secretKeyRef:
                   name: os-password-secret
                   key: os-password
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config-cm
+      volumes:
+        - name: config-volume
+          configMap:
+            name: config-cm
 
                             
       imagePullSecrets:
