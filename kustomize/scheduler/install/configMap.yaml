@@ -5,3 +5,5 @@ data:
   keepRunnersAlive: "false"
 metadata:
   name: config-cm
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
