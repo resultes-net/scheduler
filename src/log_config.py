@@ -1,0 +1,1 @@
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(taskName)s - %(module)s - %(message)s"

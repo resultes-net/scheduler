@@ -23,6 +23,7 @@ jobs:
             docker-utils
             pydantic-models
             openstack-utils
+            jsonrpc
       - name: Checkout repository
         uses: actions/checkout@v4
         with:

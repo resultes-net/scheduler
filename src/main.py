@@ -16,13 +16,13 @@ import resultes_pydantic_models.simulations.variation as _pvar
 
 import clouds_yaml as _cyaml
 import config as _config
+import log_config as _clog
 import runner_client as _rc
+import runner_client_wrapper as _rcw
 import runner_manager as _run
 import scheduling.runners as _sr
 import scheduling.users as _usr
 import server_client as _sc
-
-LOG_FORMAT = "%(asctime)s - %(levelname)s - %(taskName)s - %(module)s - %(message)s"
 
 _is_shutting_down = False
 
@@ -44,45 +44,6 @@ async def terminate_task_group() -> _tp.NoReturn:
     raise TerminateTaskGroup()
 
 
-class _RunnerClientWrapper:
-    def __init__(
-        self,
-        client_session: _ahttp.ClientSession,
-        websocket: _ahttp.ClientWebSocketResponse,
-        runner_client: _rc.RunnerClient,
-    ) -> None:
-        self._session = client_session
-        self._websocket = websocket
-        self._client: _rc.RunnerClient | None = runner_client
-
-    @staticmethod
-    async def create(ip_address: str) -> "_RunnerClientWrapper":
-        base_uri = f"http://{ip_address}:3000/"
-
-        session = _ahttp.ClientSession(base_uri)
-        try:
-            websocket = await session.ws_connect("/")
-        except:
-            await session.close()
-            raise
-
-        client = _rc.RunnerClient(websocket)
-        client.start()
-        return _RunnerClientWrapper(session, websocket, client)
-
-    @property
-    def client(self) -> _rc.RunnerClient:
-        if not self._client:
-            raise RuntimeError("Client shut down.")
-
-        return self._client
-
-    async def shut_down(self) -> None:
-        self.client.stop()
-        await self._websocket.close()
-        await self._session.close()
-
-
 class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     def __init__(
         self,
@@ -93,7 +54,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self._server_client = server_client
         self._runner_manager = runner_manager
         self._loki_ip_address = loki_ip_address
-        self._runner_client_wrappers_by_ip_address = dict[str, _RunnerClientWrapper]()
+        self._runner_client_wrappers_by_ip_address = dict[
+            str, _rcw.RunnerClientWrapper
+        ]()
         self._runners = _sr.RunnersScheduler()
         self._lock = _asyncio.Lock()
 
@@ -267,7 +230,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         self._runners.add_runner(ip_address, self._runner_manager.n_max_jobs_per_runner)
 
-    async def _create_client_wrapper(self, ip_address: str) -> _RunnerClientWrapper:
+    async def _create_client_wrapper(self, ip_address: str) -> _rcw.RunnerClientWrapper:
         _log.info("Trying to connect to runner %s...", ip_address)
 
         seconds_to_sleep = 5.0
@@ -276,7 +239,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             async with _asyncio.timeout(timeout):
                 while True:
                     try:
-                        client_wrapper = await _RunnerClientWrapper.create(ip_address)
+                        client_wrapper = await _rcw.RunnerClientWrapper.create(
+                            ip_address
+                        )
                         _log.info("...DONE trying to connect to runner %s.", ip_address)
                         return client_wrapper
                     except _ahttp.ClientConnectionError:
@@ -339,7 +304,7 @@ def _delete_stale_servers(runner_manager: _run.AbstractRunnerManager):
 
 if __name__ == "__main__":
     log_level = _os.environ.get("LOG_LEVEL", "INFO")
-    _log.basicConfig(format=LOG_FORMAT, level=log_level)
+    _log.basicConfig(format=_clog.LOG_FORMAT, level=log_level)
     _log.info("Starting scheduler...")
 
     server_host = _os.environ.get("SERVER_HOST", "localhost")

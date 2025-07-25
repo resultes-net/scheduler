@@ -1,7 +1,7 @@
 -c constraints.txt
 
 aiohttp
-jsonrpcclient
+jsonrpcserver
 pydantic
 
 python-openstacksdk

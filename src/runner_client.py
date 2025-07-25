@@ -1,85 +1,50 @@
 import asyncio as _asyncio
 import collections.abc as _cabc
-import contextlib as _ctx
 import logging as _log
 import typing as _tp
 
 import aiohttp as _ahttp
-import jsonrpcclient as _jrpcl
+import jsonrpcserver as _jrpcs
+import resultes_jsonrpc.jsonrpc.client as _rjjc
+import resultes_jsonrpc.jsonrpc.server as _rjjs
+import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_pydantic_models.pytrnsys as _mpytrnsys
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 
-_LOGGER = _log.getLogger(__file__)
+_LOGGER = _log.getLogger(__name__)
 
 
-class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
-    _WAKEUP_PERIOD = 2.5
-    _SHUTDOWN_TIMEOUT_SECONDS = 2 * _WAKEUP_PERIOD
+@_jrpcs.method()
+async def post_log_message(_: _tp.Any, level: int, message: str) -> None:
+    _LOGGER.log(level, message)
 
-    def __init__(self, websocket: _ahttp.ClientWebSocketResponse) -> None:
-        self._websocket = websocket
-        self._task: _asyncio.Task[None] | None = None
-        self._new_responses_received_event = _asyncio.Event()
-        self._parsed_response_futures_by_request_id = dict[
-            int, _asyncio.Future[_jrpcl.responses.Response]
-        ]()
 
-    def start(self) -> None:
-        self._task = _asyncio.create_task(self._response_reader())
+class RunnerClient:
+    def __init__(
+        self,
+        requests_websocket: _ahttp.ClientWebSocketResponse,
+        logging_websocket: _ahttp.ClientWebSocketResponse,
+    ) -> None:
+        self._jsonrpc_client = _rjjc.JsonRpcClient(requests_websocket)
+        self._jsonrpc_server = _rjjs.JsonRpcServer(logging_websocket)
+
+        self._jsonrpc_client_response_reader_task: _asyncio.Task[None] | None = None
+
+    async def start(self) -> None:
+        if self._jsonrpc_client_response_reader_task:
+            raise RuntimeError("Already started.")
+
+        coroutine = self._jsonrpc_client.start()
+        self._jsonrpc_client_response_reader_task = _asyncio.Task(coroutine)
+
+        await self._jsonrpc_server.start()
 
     def stop(self) -> None:
-        if not self._task:
-            raise RuntimeError("Client not running.")
+        if not self._jsonrpc_client_response_reader_task:
+            raise RuntimeError("Not started.")
 
-        self._task.cancel()
-
-    async def __aenter__(self) -> _tp.Self:
-        self.start()
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type,
-        exc_value,
-        traceback,
-    ) -> bool:
-        self.stop()
-
-        # Don't ignore exception that caused this method to be called
-        return False
-
-    async def _response_reader(self) -> None:
-
-        _LOGGER.debug("Start reading responses.")
-
-        try:
-            while True:
-                try:
-                    response = await self._websocket.receive_json(
-                        timeout=self._WAKEUP_PERIOD
-                    )
-                except TimeoutError:
-                    continue
-
-                _LOGGER.debug("Received response %s.", response)
-
-                parsed = _jrpcl.parse(response)
-
-                responses = (
-                    [parsed]
-                    if isinstance(parsed, (_jrpcl.Ok, _jrpcl.Error))
-                    else list(parsed)
-                )
-
-                for response in responses:
-                    future = self._parsed_response_futures_by_request_id[response.id]
-                    future.set_result(response)
-
-        except Exception as exception:
-            _LOGGER.error("An exception occurred: %s", exception)
-            raise
-        finally:
-            _LOGGER.info("Exiting main loop.")
+        self._jsonrpc_server.stop()
+        self._jsonrpc_client.stop()
 
     async def create_variations(
         self, simulation_id: str, parameters: _pttes.TtesParameters
@@ -96,44 +61,8 @@ class RunnerClient(_ctx.AbstractAsyncContextManager["RunnerClient"]):
             results_glob_pattern="systems-main/TTES/results/*/",
         )
 
-        params = {"runner_job": runner_job.model_dump()}
-        json = _jrpcl.request("run_python_script_in_pytrnsys_venv", params)
+        params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
 
-        return await self._send_request_and_check_response(json)
-
-    async def set_loki_ip_address(self, loki_ip_address: str) -> None:
-        params = {"loki_ip_address": loki_ip_address}
-        json = _jrpcl.request("set_loki_ip_address", params)
-
-        await self._send_request_and_check_response(json)
-
-    async def _send_request_and_check_response(self, json: _tp.Any) -> _tp.Any:
-        _LOGGER.debug("Sending request %s.", json)
-        await self._websocket.send_json(json)
-
-        response = await self._get_response(json["id"])
-        _LOGGER.debug("Got response %s.", response)
-
-        match response:
-            case _jrpcl.Ok(result):
-                return result
-            case _jrpcl.Error() as error:
-                raise RuntimeError(error)
-            case _:
-                _tp.assert_never(_)
-
-    async def _get_response(self, request_id: int) -> _jrpcl.responses.Response:
-        async with self._registered_future(request_id) as future:
-            response = await future
-            return response
-
-    @_ctx.asynccontextmanager
-    async def _registered_future(
-        self, request_id: int
-    ) -> _cabc.AsyncIterator[_asyncio.Future[_jrpcl.responses.Response]]:
-        future = _asyncio.Future[_jrpcl.responses.Response]()
-        self._parsed_response_futures_by_request_id[request_id] = future
-
-        yield future
-
-        del self._parsed_response_futures_by_request_id[request_id]
+        return await self._jsonrpc_client.send_request_and_check_and_get_response(
+            "run_python_script_in_pytrnsys_venv", params
+        )

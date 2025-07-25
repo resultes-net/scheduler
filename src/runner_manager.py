@@ -1,9 +1,9 @@
 import abc as _abc
-import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
 import logging as _log
 import pathlib as _pl
+import time as _time
 
 import openstack as _ost
 import openstack.connection as _oconn
@@ -19,7 +19,7 @@ class AbstractRunnerManager(_abc.ABC):
         raise NotImplementedError()
 
     @_abc.abstractmethod
-    async def create_server_and_get_ip(self) -> str:
+    def create_server_and_get_ip(self) -> str:
         raise NotImplementedError()
 
     @_abc.abstractmethod
@@ -38,7 +38,7 @@ class RunnerManager(AbstractRunnerManager):
     def n_max_jobs_per_runner(self) -> int:
         return 8
 
-    async def create_server_and_get_ip(self) -> str:
+    def create_server_and_get_ip(self) -> str:
         with self._create_connection() as connection:
             image = connection.image.find_image("build-image-server")
             flavor = connection.compute.find_flavor("a8-ram16-disk50-perf1")
@@ -54,14 +54,14 @@ class RunnerManager(AbstractRunnerManager):
                 availability_zone="az-2",
             )
 
-        async with _asyncio.timeout(delay=120):
-            while True:
-                server = connection.compute.find_server(server.id)
+        while True:
+            server = connection.compute.find_server(server.id)
 
-                if server.addresses:
-                    return self._get_ip_address(server)
+            if server.addresses:
+                return self._get_ip_address(server)
 
-                await _asyncio.sleep(delay=5.0)
+            seconds = 5.0
+            _time.sleep(seconds)
 
     def _get_ip_address(self, server) -> str:
         ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
@@ -117,7 +117,7 @@ class DummyRunnerManager(AbstractRunnerManager):
     def n_max_jobs_per_runner(self) -> int:
         return self._n_max_jobs_per_runner
 
-    async def create_server_and_get_ip(self) -> str:
+    def create_server_and_get_ip(self) -> str:
         return self._ip_address
 
     def delete_servers(self, ip_address: str | None = None) -> None:
