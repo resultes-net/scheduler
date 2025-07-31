@@ -12,6 +12,6 @@ def configure() -> None:
 
 
 @_jrpcs.method()
-async def post_log_message(_: _tp.Any, level: int, message: str) -> _jrpcs.Result:
+def post_log_message(_: _tp.Any, level: int, message: str) -> _jrpcs.Result:
     _LOGGER.log(level, message)
     return _jrpcs.Success()

@@ -27,7 +27,8 @@ class RunnerClient:
             requests_websocket, self._jsonrpc_client
         )
 
-        self._jsonrpc_server = _rjjs.JsonRpcServer(logging_websocket)
+        dispatcher = _rjjs.SyncDispatcher()
+        self._jsonrpc_server = _rjjs.JsonRpcServer(logging_websocket, dispatcher)
         self._logging_websocket_client = _rjwc.WebsocketClient(
             logging_websocket, self._jsonrpc_server
         )
