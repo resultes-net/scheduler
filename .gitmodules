@@ -11,5 +11,5 @@
 	path = openstack-utils
 	url = https://github.com/resultes-net/openstack-utils.git
 [submodule "jsonrpc"]
-	path = openstack-utils
+	path = jsonrpc
 	url = https://github.com/resultes-net/jsonrpc.git
