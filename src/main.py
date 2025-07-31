@@ -49,11 +49,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self,
         server_client: _sc.ServerClient,
         runner_manager: _run.AbstractRunnerManager,
-        loki_ip_address: str,
     ) -> None:
         self._server_client = server_client
         self._runner_manager = runner_manager
-        self._loki_ip_address = loki_ip_address
         self._runner_client_wrappers_by_ip_address = dict[
             str, _rcw.RunnerClientWrapper
         ]()
@@ -181,7 +179,6 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                 )
 
                 variation = _pvar.CreateVariation(
-                    simulation_id=simulation_id,
                     relative_deck_file_path=relative_deck_file_pure_path,
                 )
 
@@ -215,18 +212,12 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
     async def _create_new_runner(self) -> None:
         _log.info("Creating new runner...")
-        ip_address = await self._runner_manager.create_server_and_get_ip()
+        ip_address = await _asyncio.to_thread(
+            self._runner_manager.create_server_and_get_ip
+        )
         _log.info("...DONE. New runner with ip address %s created.", ip_address)
         runner_client_wrapper = await self._create_client_wrapper(ip_address)
         self._runner_client_wrappers_by_ip_address[ip_address] = runner_client_wrapper
-
-        _log.info(
-            "Setting Loki IP address %s on server %s...",
-            self._loki_ip_address,
-            ip_address,
-        )
-        await runner_client_wrapper.client.set_loki_ip_address(self._loki_ip_address)
-        _log.info("...DONE.")
 
         self._runners.add_runner(ip_address, self._runner_manager.n_max_jobs_per_runner)
 
@@ -283,13 +274,10 @@ async def main(
 ) -> None:
     _delete_stale_servers(runner_manager)
 
-    loki_ip_address = _soc.gethostbyname("loki-gateway.meta.svc.cluster.local")
-    _log.info("Using Loki IP address: %s.", loki_ip_address)
-
     try:
         async with _ahttp.ClientSession(server_base_uri) as server_session:
             server_client = _sc.ServerClient(server_session)
-            async with Looper(server_client, runner_manager, loki_ip_address) as looper:
+            async with Looper(server_client, runner_manager) as looper:
                 await looper.loop(polling_period_seconds)
     finally:
         _delete_stale_servers(runner_manager)

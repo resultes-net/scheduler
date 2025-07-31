@@ -9,7 +9,7 @@ import runner_manager as _run
 @_pt.mark.asyncio
 async def test_create_server() -> None:
     runner_manager = _create_manager()
-    ip_address = await runner_manager.create_server_and_get_ip()
+    ip_address = runner_manager.create_server_and_get_ip()
     print(ip_address)
 
 

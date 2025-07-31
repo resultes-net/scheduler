@@ -1,22 +1,19 @@
-import asyncio as _asyncio
 import collections.abc as _cabc
 import logging as _log
-import typing as _tp
 
 import aiohttp as _ahttp
-import jsonrpcserver as _jrpcs
 import resultes_jsonrpc.jsonrpc.client as _rjjc
 import resultes_jsonrpc.jsonrpc.server as _rjjs
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
+import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.pytrnsys as _mpytrnsys
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 
+import jrpc_methods as _jrpcm
+
+_jrpcm.configure()
+
 _LOGGER = _log.getLogger(__name__)
-
-
-@_jrpcs.method()
-async def post_log_message(_: _tp.Any, level: int, message: str) -> None:
-    _LOGGER.log(level, message)
 
 
 class RunnerClient:
@@ -26,25 +23,36 @@ class RunnerClient:
         logging_websocket: _ahttp.ClientWebSocketResponse,
     ) -> None:
         self._jsonrpc_client = _rjjc.JsonRpcClient(requests_websocket)
+        self._requests_websocket_client = _rjwc.WebsocketClient(
+            requests_websocket, self._jsonrpc_client
+        )
+
         self._jsonrpc_server = _rjjs.JsonRpcServer(logging_websocket)
+        self._logging_websocket_client = _rjwc.WebsocketClient(
+            logging_websocket, self._jsonrpc_server
+        )
 
-        self._jsonrpc_client_response_reader_task: _asyncio.Task[None] | None = None
+        self._started = False
 
-    async def start(self) -> None:
-        if self._jsonrpc_client_response_reader_task:
+    def start(self) -> None:
+        if self._started:
             raise RuntimeError("Already started.")
 
-        coroutine = self._jsonrpc_client.start()
-        self._jsonrpc_client_response_reader_task = _asyncio.Task(coroutine)
+        self._started = True
 
-        await self._jsonrpc_server.start()
+        _LOGGER.info("Starting.")
 
-    def stop(self) -> None:
-        if not self._jsonrpc_client_response_reader_task:
-            raise RuntimeError("Not started.")
+        self._requests_websocket_client.start()
+        self._logging_websocket_client.start()
 
-        self._jsonrpc_server.stop()
-        self._jsonrpc_client.stop()
+    async def join(self) -> None:
+        if not self._started:
+            raise RuntimeError("Not started")
+
+        _LOGGER.info("Joining.")
+
+        await self._requests_websocket_client.join()
+        await self._logging_websocket_client.join()
 
     async def create_variations(
         self, simulation_id: str, parameters: _pttes.TtesParameters

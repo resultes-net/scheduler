@@ -18,7 +18,7 @@ class RunnerClientWrapper:
 
     @staticmethod
     async def create(ip_address: str) -> "RunnerClientWrapper":
-        base_uri = f"http://{ip_address}:3000/"
+        base_uri = f"http://{ip_address}:3000"
 
         session = _ahttp.ClientSession(base_uri)
 
@@ -34,7 +34,7 @@ class RunnerClientWrapper:
             raise
 
         client = _rc.RunnerClient(requests_websocket, logging_websocket)
-        await client.start()
+        client.start()
 
         return RunnerClientWrapper(
             session, requests_websocket, logging_websocket, client
@@ -48,7 +48,7 @@ class RunnerClientWrapper:
         return self._client
 
     async def shut_down(self) -> None:
-        self.client.stop()
         await self._requests_websocket.close()
         await self._logging_websocket.close()
+        await self.client.join()
         await self._session.close()
