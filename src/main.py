@@ -83,12 +83,13 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                         await self._server_client.get_simulations_waiting_for_variations_creation_by_user_id()
                     )
 
-                    data = _pprint.pformat(simulations_by_user_id, indent=4)
+                    if simulations_by_user_id:
+                        data = _pprint.pformat(simulations_by_user_id, indent=4)
 
-                    _log.info(
-                        "Found the following simulations for which to create variations: %s\n",
-                        data,
-                    )
+                        _log.info(
+                            "Found the following simulations for which to create variations: %s\n",
+                            data,
+                        )
 
                     users_scheduler = self._create_users_scheduler(
                         simulations_by_user_id
