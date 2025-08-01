@@ -4,9 +4,9 @@ import socket as _soc
 
 import pytest as _pt
 
-import jrpc_methods as _jrpcm
-import log_config as _clog
-import runner_client_wrapper as _rcw
+import scheduler.jrpc_methods as _jrpcm
+import scheduler.log_config as _clog
+import scheduler.runner.client_wrapper as _rcw
 
 
 @_pt.mark.asyncio

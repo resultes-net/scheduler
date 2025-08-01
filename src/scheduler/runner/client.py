@@ -9,7 +9,7 @@ import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 
-import jrpc_methods as _jrpcm
+import scheduler.jrpc_methods as _jrpcm
 
 _jrpcm.configure()
 

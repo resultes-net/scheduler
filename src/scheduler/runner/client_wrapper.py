@@ -1,6 +1,6 @@
 import aiohttp as _ahttp
 
-import runner_client as _rc
+import scheduler.runner.client as _rc
 
 
 class RunnerClientWrapper:

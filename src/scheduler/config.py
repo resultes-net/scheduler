@@ -1,7 +1,7 @@
 import logging as _log
 import pathlib as _pl
 
-_MOUNT_DIR_PATH = _pl.Path(__file__).parents[1] / "config-cm"
+_MOUNT_DIR_PATH = _pl.Path(__file__).parents[2] / "config-cm"
 
 
 def keepRunnersAlive() -> bool:

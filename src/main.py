@@ -6,12 +6,12 @@ import socket as _soc
 
 import aiohttp as _ahttp
 
-import clouds_yaml as _cyaml
-import config as _config
-import log_config as _clog
-import runner_manager as _run
-import server_client as _sc
-import workflow as _wf
+import scheduler.clouds_yaml as _cyaml
+import scheduler.config as _config
+import scheduler.log_config as _clog
+import scheduler.runner.manager as _run
+import scheduler.server.server_client as _sc
+import scheduler.workflow as _wf
 
 _looper: _wf.Looper | None = None
 

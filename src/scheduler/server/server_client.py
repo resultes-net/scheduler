@@ -11,9 +11,9 @@ class ServerClient:
     def __init__(self, session: _ahttp.ClientSession) -> None:
         self._session = session
 
-    async def get_simulations_waiting_for_variations_creation_by_user_id(
+    async def get_simulations_waiting_for_variations_creation(
         self,
-    ) -> _cabc.Mapping[str, _cabc.Sequence[_psim.Simulation]]:
+    ) -> _cabc.Sequence[_psim.Simulation]:
         params = {"state": "waiting-for-variations-creation"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
@@ -21,12 +21,7 @@ class ServerClient:
 
         simulations = [_psim.Simulation(**s) for s in json]
 
-        def get_user_id(simulation: _psim.Simulation) -> str:
-            return simulation.user_id
-
-        result = {k: list(vs) for k, vs in _it.groupby(simulations, key=get_user_id)}
-
-        return result
+        return simulations
 
     async def get_waiting_variations(self) -> _psrv.WaitingVariations:
         async with self._session.get("waiting-variations") as response:

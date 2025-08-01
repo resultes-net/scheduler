@@ -1,30 +1,56 @@
 import collections.abc as _cabc
 import dataclasses as _dc
-import itertools as _it
+import datetime as _dt
 
-from . import common as _com
+import resultes_pydantic_models.common as _rpmc
 
 
 @_dc.dataclass
 class _RunningJob:
-    job: _com.Job
+    id: str
+    user_id: str
     runner: "_Runner"
+    started_on: _dt.datetime = _dc.field(default_factory=_rpmc.utc_now, init=False)
 
 
 @_dc.dataclass
 class _Runner:
-    ip_address: str
-    n_max_jobs: int
-    assigned_jobs: list[_RunningJob] = _dc.field(default_factory=lambda: [])
+    def __init__(self, ip_address: str, n_max_jobs: int) -> None:
+        self.ip_address = ip_address
+        self.n_max_jobs = n_max_jobs
+        self._assigned_jobs = list[_RunningJob]()
 
-    def n_jobs(self) -> int:
-        return len(self.assigned_jobs)
+    def has_assigned_job(self, job_id: str) -> bool:
+        job_ids = [j.id for j in self._assigned_jobs]
+        return job_id in job_ids
+
+    def assign_job(self, *, job_id: str, user_id: str) -> None:
+        job_ids = [j.id for j in self._assigned_jobs]
+        if job_id in job_ids:
+            raise ValueError("Job already assigned.")
+
+        running_job = _RunningJob(job_id, user_id, self)
+
+        self._assigned_jobs.append(running_job)
+
+    def remove_completed_job(self, job_id: str) -> None:
+        job = _get_single(j for j in self._assigned_jobs if j.id == job_id)
+        self._assigned_jobs.remove(job)
+
+    def get_n_jobs(self, user_id: str | None = None) -> int:
+        relevant_jobs = (
+            self._assigned_jobs
+            if not user_id
+            else [j for j in self._assigned_jobs if j.user_id == user_id]
+        )
+
+        return len(relevant_jobs)
 
     def have_max_jobs(self) -> bool:
-        return self.n_jobs() == self.n_max_jobs
+        return self.get_n_jobs() == self.n_max_jobs
 
     def is_idle(self) -> bool:
-        return self.n_jobs() == 0
+        return self.get_n_jobs() == 0
 
 
 class RunnersScheduler:
@@ -32,18 +58,8 @@ class RunnersScheduler:
         self._runners = list[_Runner]()
 
     def get_n_jobs(self, user_id: str) -> int:
-        jobs = [a.job for r in self._runners for a in r.assigned_jobs]
-
-        def get_user_id(job: _com.Job) -> str:
-            return job.user_id
-
-        n_jobs_by_user_id = {
-            k: len(list(js)) for k, js in _it.groupby(jobs, key=get_user_id)
-        }
-
-        n_jobs_for_user_id = n_jobs_by_user_id.get(user_id, 0)
-
-        return n_jobs_for_user_id
+        n_jobs = sum(r.get_n_jobs(user_id) for r in self._runners)
+        return n_jobs
 
     def have_all_runners_max_jobs(self) -> bool:
         if not self._runners:
@@ -55,9 +71,7 @@ class RunnersScheduler:
         runner = _Runner(ip_address, n_max_jobs)
         self._runners.append(runner)
 
-    def start_job_and_get_handling_runner_ip_address(
-        self, job_id: str, user_id: str
-    ) -> str:
+    def assign_job_and_get_runner_ip_address(self, *, job_id: str, user_id: str) -> str:
         if self.have_all_runners_max_jobs():
             raise ValueError("All runners are assigned the maximum amount of jobs.")
 
@@ -65,8 +79,9 @@ class RunnersScheduler:
             self._get_runner_with_fewest_free_job_slots()
         )
 
-        job = _com.Job(job_id, user_id)
-        self._assign_job(job, runner_with_most_fewest_free_job_slots)
+        runner_with_most_fewest_free_job_slots.assign_job(
+            job_id=job_id, user_id=user_id
+        )
 
         return runner_with_most_fewest_free_job_slots.ip_address
 
@@ -74,7 +89,7 @@ class RunnersScheduler:
         runners_with_free_job_slot = [r for r in self._runners if not r.have_max_jobs()]
 
         sorted_runners_with_free_job_slot = sorted(
-            runners_with_free_job_slot, key=_Runner.n_jobs, reverse=True
+            runners_with_free_job_slot, key=_Runner.get_n_jobs, reverse=True
         )
 
         runner_with_fewest_free_job_slots = sorted_runners_with_free_job_slot[0]
@@ -83,22 +98,17 @@ class RunnersScheduler:
 
         return runner_with_fewest_free_job_slots
 
-    def _assign_job(self, job: _com.Job, runner: _Runner) -> None:
-        assigned_job = _RunningJob(job, runner)
-        runner.assigned_jobs.append(assigned_job)
-
     def remove_completed_job(self, job_id: str) -> None:
-        job = _get_single(
-            a for r in self._runners for a in r.assigned_jobs if a.job.id == job_id
-        )
-        if not job:
-            raise ValueError("No job with given id.", job_id)
+        for runner in self._runners:
+            if runner.has_assigned_job(job_id):
+                runner.remove_completed_job(job_id)
+                return
 
-        self._remove_job(job)
+        raise ValueError("Unknown job.", job_id)
 
     def _remove_job(self, job: _RunningJob) -> None:
         runner = job.runner
-        runner.assigned_jobs.remove(job)
+        runner.remove_completed_job(job.id)
 
     def get_idle_runner_ip_addresses(self) -> _cabc.Sequence[str]:
         return [r.ip_address for r in self._runners if r.is_idle()]

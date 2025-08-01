@@ -2,8 +2,8 @@ import os as _os
 
 import pytest as _pt
 
-import clouds_yaml as _cyaml
-import runner_manager as _run
+import scheduler.clouds_yaml as _cyaml
+import scheduler.runner.manager as _run
 
 
 @_pt.mark.asyncio
