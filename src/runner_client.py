@@ -6,7 +6,7 @@ import resultes_jsonrpc.jsonrpc.client as _rjjc
 import resultes_jsonrpc.jsonrpc.server as _rjjs
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.websockets.client as _rjwc
-import resultes_pydantic_models.pytrnsys as _mpytrnsys
+import resultes_pydantic_models.runner as _mrun
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 
 import jrpc_methods as _jrpcm
@@ -60,9 +60,9 @@ class RunnerClient:
     ) -> _cabc.Sequence[str]:
         # params = {"parameters": parameters.model_dump()}
 
-        runner_job = _mpytrnsys.RunnerJob(
+        runner_job = _mrun.RunnerJob(
             id=simulation_id,
-            object_storage_path=_mpytrnsys.ObjectStorageZipPath(
+            object_storage_path=_mrun.ObjectStorageZipPath(
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),

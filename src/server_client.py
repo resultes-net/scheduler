@@ -1,6 +1,8 @@
 import collections.abc as _cabc
+import itertools as _it
 
 import aiohttp as _ahttp
+import resultes_pydantic_models.server as _psrv
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
@@ -15,13 +17,23 @@ class ServerClient:
         params = {"state": "waiting-for-variations-creation"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
-
             json = await response.json()
-            result = {
-                user_id: [_psim.Simulation(**s) for s in simulations]
-                for user_id, simulations in json.items()
-            }
-            return result
+
+        simulations = [_psim.Simulation(**s) for s in json]
+
+        def get_user_id(simulation: _psim.Simulation) -> str:
+            return simulation.user_id
+
+        result = {k: list(vs) for k, vs in _it.groupby(simulations, key=get_user_id)}
+
+        return result
+
+    async def get_waiting_variations(self) -> _psrv.WaitingVariations:
+        async with self._session.get("waiting-variations") as response:
+            response.raise_for_status()
+            json = await response.json()
+
+        return _psrv.WaitingVariations(**json)
 
     async def set_simulation_state(
         self, simulation_id: str, new_state: _psim.SimulationState
