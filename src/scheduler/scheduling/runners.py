@@ -118,9 +118,15 @@ class RunnersScheduler:
         return [r.ip_address for r in self._runners if r.is_idle()]
 
     def remove_runner(self, ip_address: str) -> None:
-        runner = _get_single(r for r in self._runners if r.ip_address == ip_address)
-        if not runner:
-            raise ValueError("No runner with given IP.", ip_address)
+        try:
+            runner = _get_single(r for r in self._runners if r.ip_address == ip_address)
+        except ValueError as error:
+            raise ValueError("No runner with given IP.", ip_address) from error
+
+        if runner.get_n_jobs() > 0:
+            raise ValueError(
+                "Runner with given IP address has assigned jobs.", ip_address
+            )
 
         _LOGGER.info("Removing runner with IP %s.", runner.ip_address)
 
