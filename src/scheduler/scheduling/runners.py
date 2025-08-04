@@ -1,8 +1,11 @@
 import collections.abc as _cabc
 import dataclasses as _dc
 import datetime as _dt
+import logging as _log
 
 import resultes_pydantic_models.common as _rpmc
+
+_LOGGER = _log.getLogger(__name__)
 
 
 @_dc.dataclass
@@ -33,7 +36,12 @@ class _Runner:
 
         self._assigned_jobs.append(running_job)
 
+        _LOGGER.info("Assigned job %s to runner with IP %s.", job_id, self.ip_address)
+
     def remove_completed_job(self, job_id: str) -> None:
+        _LOGGER.info(
+            "Removing completed job %s for runner with IP %s.", job_id, self.ip_address
+        )
         job = _get_single(j for j in self._assigned_jobs if j.id == job_id)
         self._assigned_jobs.remove(job)
 
@@ -106,10 +114,6 @@ class RunnersScheduler:
 
         raise ValueError("Unknown job.", job_id)
 
-    def _remove_job(self, job: _RunningJob) -> None:
-        runner = job.runner
-        runner.remove_completed_job(job.id)
-
     def get_idle_runner_ip_addresses(self) -> _cabc.Sequence[str]:
         return [r.ip_address for r in self._runners if r.is_idle()]
 
@@ -117,6 +121,8 @@ class RunnersScheduler:
         runner = _get_single(r for r in self._runners if r.ip_address == ip_address)
         if not runner:
             raise ValueError("No runner with given IP.", ip_address)
+
+        _LOGGER.info("Removing runner with IP %s.", runner.ip_address)
 
         self._runners.remove(runner)
 
