@@ -15,6 +15,8 @@ import scheduler.runner_clients_manager as _rcm
 import scheduler.scheduling.jobs as _susr
 import scheduler.server.server_client as _sc
 
+_LOGGER = _log.getLogger(__name__)
+
 
 class TerminateTaskGroup(Exception):
     pass
@@ -52,7 +54,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         if self._is_shutting_down:
             raise RuntimeError("Shut down.")
 
-        _log.info("Scheduler started.")
+        _LOGGER.info("Scheduler started.")
 
         period = _dt.timedelta(seconds=polling_period_seconds)
 
@@ -68,7 +70,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                     if waiting_simulations:
                         data = _pprint.pformat(waiting_simulations, indent=4)
 
-                        _log.info(
+                        _LOGGER.info(
                             "Found the following simulations for which to create variations: %s\n",
                             data,
                         )
@@ -82,11 +84,15 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
                     await self._runner_clients_manager.delete_any_idle_runners()
 
-                    await self._sleep_until(next_wakeup_time, period)
+                    next_wakeup_time = (
+                        await self._adjust_wakeup_time_if_needed_and_sleep_until(
+                            next_wakeup_time, period
+                        )
+                    )
 
                     next_wakeup_time += period
 
-                _log.info("Exited main loop.")
+                _LOGGER.info("Exited main loop.")
 
                 task_group.create_task(terminate_task_group())
 
@@ -149,12 +155,12 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         return _susr.UserJobs(n_jobs, runnable_jobs)
 
     @staticmethod
-    async def _sleep_until(
+    async def _adjust_wakeup_time_if_needed_and_sleep_until(
         wakeup_time: _dt.datetime, polling_period: _dt.timedelta
-    ) -> None:
+    ) -> _dt.datetime:
         now = _dt.datetime.now()
         if wakeup_time < now:
-            _log.warning(
+            _LOGGER.warning(
                 "Wake up time %s is in the past (now = %s). Resetting to 10 seconds from now.",
                 wakeup_time,
                 now,
@@ -164,3 +170,5 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         seconds_to_sleep = (wakeup_time - now).seconds
 
         await _asyncio.sleep(seconds_to_sleep)
+
+        return wakeup_time
