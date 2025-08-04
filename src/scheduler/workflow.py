@@ -123,7 +123,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             coroutine = self._run_job_and_remove_once_completed(
                 next_runnable_job, runner_client
             )
-            task_group.create_task(coroutine)
+
+            task_name = f"Task-Job-{next_runnable_job.id}"
+            task_group.create_task(coroutine, name=task_name)
 
     async def _run_job_and_remove_once_completed(
         self,

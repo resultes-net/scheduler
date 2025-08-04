@@ -21,6 +21,7 @@ class RunnerClient:
         self,
         requests_websocket: _ahttp.ClientWebSocketResponse,
         logging_websocket: _ahttp.ClientWebSocketResponse,
+        ip_address: str,
     ) -> None:
         self._jsonrpc_client = _rjjc.JsonRpcClient(requests_websocket)
         self._requests_websocket_client = _rjwc.WebsocketClient(
@@ -28,7 +29,10 @@ class RunnerClient:
         )
 
         dispatcher = _rjjs.SyncDispatcher()
-        self._jsonrpc_server = _rjjs.JsonRpcServer(logging_websocket, dispatcher)
+        context = _jrpcm.Context(ip_address)
+        self._jsonrpc_server = _rjjs.JsonRpcServer(
+            logging_websocket, dispatcher, context
+        )
         self._logging_websocket_client = _rjwc.WebsocketClient(
             logging_websocket, self._jsonrpc_server
         )

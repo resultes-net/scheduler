@@ -33,7 +33,7 @@ class RunnerClientWrapper:
             await session.close()
             raise
 
-        client = _rc.RunnerClient(requests_websocket, logging_websocket)
+        client = _rc.RunnerClient(requests_websocket, logging_websocket, ip_address)
         client.start()
 
         return RunnerClientWrapper(

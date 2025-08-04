@@ -1,7 +1,7 @@
 import logging as _log
-import typing as _tp
 
 import jsonrpcserver as _jrpcs
+import resultes_jsonrpc.jsonrpc.server as _rjjs
 
 _LOGGER = _log.getLogger(__name__)
 
@@ -11,7 +11,13 @@ def configure() -> None:
     pass
 
 
+class Context(_rjjs.ContextBase):
+    def __init__(self, ip_address: str) -> None:
+        super().__init__()
+        self.ip_address = ip_address
+
+
 @_jrpcs.method()
-def post_log_message(_: _tp.Any, level: int, message: str) -> _jrpcs.Result:
-    _LOGGER.log(level, message)
+def post_log_message(context: Context, level: int, message: str) -> _jrpcs.Result:
+    _LOGGER.log(level, "%s - %s", context.ip_address, message)
     return _jrpcs.Success()
