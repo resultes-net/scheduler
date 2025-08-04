@@ -21,9 +21,9 @@ async def test() -> None:
 
     client = wrapper.client
     try:
-        simulation_id = _sec.token_hex(nbytes=5)
+        job_id = _sec.token_hex(nbytes=5)
 
-        variations_created = await client.create_variations(simulation_id, None)
+        variations_created = await client.create_variations(job_id, None)
 
         print(variations_created)
     finally:

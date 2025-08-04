@@ -39,7 +39,7 @@ class CreateVariationsJob(_jb.RunnableJobBase):
 
     async def run(self, runner_client: _rc.RunnerClient) -> None:
         relative_deck_file_paths = await runner_client.create_variations(
-            self._simulation.id, self._simulation.parameters
+            self.id, self._simulation.parameters
         )
 
         if relative_deck_file_paths:

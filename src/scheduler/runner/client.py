@@ -56,12 +56,12 @@ class RunnerClient:
         await self._logging_websocket_client.join()
 
     async def create_variations(
-        self, simulation_id: str, parameters: _pttes.TtesParameters
+        self, job_id: str, parameters: _pttes.TtesParameters
     ) -> _cabc.Sequence[str]:
         # params = {"parameters": parameters.model_dump()}
 
         runner_job = _mrun.RunnerJob(
-            id=simulation_id,
+            id=job_id,
             object_storage_path=_mrun.ObjectStorageZipPath(
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
