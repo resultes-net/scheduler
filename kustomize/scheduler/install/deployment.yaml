@@ -21,6 +21,8 @@ spec:
       containers:
         - image: ghcr.io/resultes-net/scheduler:latest
           name: scheduler
+          ports:
+            - containerPort: 5678
           env:
             - name: SERVER_HOST
               value: internal-server.server.svc.cluster.local

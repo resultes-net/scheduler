@@ -5,3 +5,5 @@ jsonrpcserver
 pydantic
 
 python-openstacksdk
+
+debugpy

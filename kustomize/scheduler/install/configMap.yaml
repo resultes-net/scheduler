@@ -3,5 +3,7 @@ kind: ConfigMap
 data:
   # Set to "true" using `kubectl` to keep runners around for debugging
   keepRunnersAlive: "false"
+  # Set to "true" using `kubectl` to start debugger with scheduler
+  runDebugger: "false"
 metadata:
   name: config-cm

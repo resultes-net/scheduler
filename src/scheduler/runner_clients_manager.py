@@ -96,7 +96,7 @@ class RunnerClientsManager:
 
     async def delete_any_idle_runners(self) -> None:
         if _config.keepRunnersAlive():
-            _config.log_explanation()
+            _config.log_keep_runners_alive_explanation()
             return
 
         idle_runner_ip_addresses = (
