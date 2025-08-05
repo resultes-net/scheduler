@@ -112,6 +112,8 @@ class RunnersScheduler:
                 runner.remove_completed_job(job_id)
                 return
 
+        _LOGGER.error("Cannot remove job %s: it's uknown.", job_id)
+
         raise ValueError("Unknown job.", job_id)
 
     def get_idle_runner_ip_addresses(self) -> _cabc.Sequence[str]:
@@ -124,6 +126,10 @@ class RunnersScheduler:
             raise ValueError("No runner with given IP.", ip_address) from error
 
         if runner.get_n_jobs() > 0:
+            _LOGGER.error(
+                "Trying to remove runner with IP address %s which still has assigned jobs.",
+                ip_address,
+            )
             raise ValueError(
                 "Runner with given IP address has assigned jobs.", ip_address
             )
