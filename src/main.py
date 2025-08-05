@@ -63,6 +63,12 @@ if __name__ == "__main__":
     _log.basicConfig(format=_clog.LOG_FORMAT, level=log_level)
     _LOGGER.info("Starting scheduler...")
 
+    python_frozen_modules = _os.environ.get("PYTHON_FROZEN_MODULES")
+    if not python_frozen_modules:
+        _LOGGER.info("PYTHON_FROZEN_MODULES not set.")
+    else:
+        _LOGGER.info("PYTHON_FROZEN_MODULES = %s.", python_frozen_modules)
+
     if _config.run_debugger():
         _run_debugger()
 
