@@ -53,13 +53,9 @@ def _delete_stale_servers(runner_manager: _run.AbstractRunnerManager):
 
 def _run_debugger() -> None:
     _config.log_run_debugger_explanation()
-
-    ip_address = _os.environ["MY_POD_IP"]
-    endpoint = (ip_address, 5678)
-
     import debugpy
 
-    debugpy.listen(endpoint)
+    debugpy.listen(5678)
 
 
 if __name__ == "__main__":
