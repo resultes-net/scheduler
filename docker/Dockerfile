@@ -20,4 +20,4 @@ COPY config/clouds.yaml config/clouds.yaml
 COPY src src
 WORKDIR /app/src
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["/bin/sh", "run_main.sh"]
