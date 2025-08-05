@@ -5,5 +5,7 @@ data:
   keepRunnersAlive: "false"
   # Set to "true" using `kubectl` to start debugger with scheduler
   runDebugger: "false"
+  # Set to "off" using `kubectl` for better debugging experience
+  pythonFrozenModules: "on"
 metadata:
   name: config-cm
