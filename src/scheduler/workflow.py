@@ -98,6 +98,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         except* TerminateTaskGroup:
             pass
+        except* BaseException as exception:
+            _LOGGER.error("Exception occurred: %s. Terminating.", exception)
+            raise
 
     async def _process_jobs(
         self,
