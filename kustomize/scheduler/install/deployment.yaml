@@ -24,6 +24,10 @@ spec:
           ports:
             - containerPort: 5678
           env:
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: SERVER_HOST
               value: internal-server.server.svc.cluster.local
             - name: SERVER_PORT
