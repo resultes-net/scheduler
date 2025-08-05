@@ -41,6 +41,11 @@ spec:
                 secretKeyRef:
                   name: os-password-secret
                   key: os-password
+            - name: PYTHON_FROZEN_MODULES
+              valueFrom:
+                configMapKeyRef:
+                  name: config-cm
+                  key: pythonFrozenModules
           volumeMounts:
             - name: config-volume
               mountPath: /app/config-cm
