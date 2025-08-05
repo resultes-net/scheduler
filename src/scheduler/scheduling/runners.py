@@ -16,7 +16,6 @@ class _RunningJob:
     started_on: _dt.datetime = _dc.field(default_factory=_rpmc.utc_now, init=False)
 
 
-@_dc.dataclass
 class _Runner:
     def __init__(self, ip_address: str, n_max_jobs: int) -> None:
         self.ip_address = ip_address

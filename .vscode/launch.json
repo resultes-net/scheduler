@@ -10,13 +10,13 @@
             "type": "debugpy",
             "request": "attach",
             "connect": {
-                "host": "localhost",
+                "host": "hn501036.local",
                 "port": 5678
             },
             "pathMappings": [
                 {
                     "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "."
+                    "remoteRoot": "/app"
                 }
             ]
         }
