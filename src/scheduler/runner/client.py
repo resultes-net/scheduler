@@ -77,5 +77,5 @@ class RunnerClient:
         params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
 
         return await self._jsonrpc_client.send_request_and_check_and_get_response(
-            "run_python_script_in_pytrnsys_venv", params
+            "run_job", params
         )

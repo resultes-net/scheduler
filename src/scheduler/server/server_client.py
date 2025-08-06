@@ -1,5 +1,5 @@
 import collections.abc as _cabc
-import itertools as _it
+import enum as _enum
 
 import aiohttp as _ahttp
 import resultes_pydantic_models.server as _psrv
@@ -33,12 +33,7 @@ class ServerClient:
     async def set_simulation_state(
         self, simulation_id: str, new_state: _psim.SimulationState
     ) -> None:
-        params = {"new_state": new_state.value}
-        async with self._session.put(
-            f"simulations/{simulation_id}/state", params=params
-        ) as response:
-            response.raise_for_status()
-            _ = await response.json()
+        await self._set_state("simulations", simulation_id, new_state)
 
     async def create_variation(
         self, simulation_id: str, variation: _pvar.CreateVariation
@@ -50,3 +45,16 @@ class ServerClient:
             response.raise_for_status()
             response_json = await response.json()
             return _pvar.Variation(**response_json)
+
+    async def set_variation_state(
+        self, variation_id: str, new_state: _pvar.VariationState
+    ) -> None:
+        await self._set_state("variations", variation_id, new_state)
+
+    async def _set_state(self, collection: str, id: str, new_state: _enum.Enum) -> None:
+        params = {"new_state": new_state.value}
+        async with self._session.put(
+            f"{collection}/{id}/state", params=params
+        ) as response:
+            response.raise_for_status()
+            _ = await response.json()
