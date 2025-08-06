@@ -1,5 +1,6 @@
 import collections.abc as _cabc
 import logging as _log
+import pathlib as _pl
 
 import aiohttp as _ahttp
 import resultes_jsonrpc.jsonrpc.client as _rjjc
@@ -70,7 +71,10 @@ class RunnerClient:
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
-            script_to_run="systems-main/TTES/run.pytrnsys",
+            program=_pl.PureWindowsPath(
+                r"C:\Users\Administrator\resultes\venv3.13\Scripts\python.exe"
+            ),
+            args=["systems-main/TTES/run.pytrnsys"],
             results_glob_pattern="systems-main/TTES/results/*/",
         )
 
