@@ -74,7 +74,7 @@ class RunnerClient:
             program=_pl.PureWindowsPath(
                 r"C:\Users\Administrator\resultes\venv3.13\Scripts\python.exe"
             ),
-            args=[_pl.PureWindowsPath(r"systems-main\TTES\run.pytrnsys")],
+            args=[_pl.PureWindowsPath(r"run.pytrnsys")],
             working_dir=_pl.PureWindowsPath(r"systems-main\TTES"),
             results_glob_pattern="systems-main/TTES/results/*/",
         )
