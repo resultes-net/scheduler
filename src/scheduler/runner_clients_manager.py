@@ -107,7 +107,7 @@ class RunnerClientsManager:
             self._runners_scheduler.remove_runner(idle_runner_ip_address)
             wrapper = self._runner_client_wrappers_by_ip_address[idle_runner_ip_address]
             await wrapper.shut_down()
-            self._runner_manager.delete_servers_and_attatched_volumes(idle_runner_ip_address)
+            self._runner_manager.delete_servers(idle_runner_ip_address)
 
     async def shut_down(self) -> None:
         for (

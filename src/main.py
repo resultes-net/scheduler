@@ -48,7 +48,7 @@ def _delete_stale_servers(runner_manager: _run.AbstractRunnerManager):
     if _config.keepRunnersAlive():
         _config.log_keep_runners_alive_explanation()
     else:
-        runner_manager.delete_servers_and_attatched_volumes()
+        runner_manager.delete_servers()
 
 
 def _run_debugger() -> None:

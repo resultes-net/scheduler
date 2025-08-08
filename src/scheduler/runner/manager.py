@@ -23,9 +23,7 @@ class AbstractRunnerManager(_abc.ABC):
         raise NotImplementedError()
 
     @_abc.abstractmethod
-    def delete_servers_and_attatched_volumes(
-        self, ip_address: str | None = None
-    ) -> None:
+    def delete_servers(self, ip_address: str | None = None) -> None:
         raise NotImplementedError()
 
 
@@ -69,9 +67,7 @@ class RunnerManager(AbstractRunnerManager):
         ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
         return ip_address
 
-    def delete_servers_and_attatched_volumes(
-        self, ip_address: str | None = None
-    ) -> None:
+    def delete_servers(self, ip_address: str | None = None) -> None:
         _log.info("Deleting servers...")
 
         with self._create_connection() as connection:
@@ -92,15 +88,7 @@ class RunnerManager(AbstractRunnerManager):
                 _LOG.info(
                     "Deleting runner %s with IP address %s.", server.id, ip_address
                 )
-
-                attached_volume_ids = [
-                    a.volume_id for a in connection.compute.volume_attachements(server)
-                ]
-
                 connection.compute.delete_server(server)
-
-                for attached_volume_id in attached_volume_ids:
-                    connection.block_storage.delete_volume(attached_volume_id)
 
             _log.info("...DONE: %i server(s) deleted.", len(servers))
 
@@ -132,7 +120,5 @@ class DummyRunnerManager(AbstractRunnerManager):
     def create_server_and_get_ip(self) -> str:
         return self._ip_address
 
-    def delete_servers_and_attatched_volumes(
-        self, ip_address: str | None = None
-    ) -> None:
+    def delete_servers(self, ip_address: str | None = None) -> None:
         return
