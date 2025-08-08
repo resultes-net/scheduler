@@ -1,8 +1,6 @@
 import datetime as _dt
 import logging as _log
-import pathlib as _pl
 
-import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
 import scheduler.runnable_job_base as _jb
@@ -42,6 +40,8 @@ class SimulateVariation(_jb.RunnableJobBase):
         )
 
     async def run(self, runner_client: _rc.RunnerClient) -> None:
+        await runner_client.simulate_variation(self._variation)
+
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.DONE
         )
