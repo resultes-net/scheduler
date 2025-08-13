@@ -122,6 +122,9 @@ class _ServerFactory:
     def _delete_stale_disk_images_and_get_uuid_of_latest(self) -> str:
         images = self._get_disk_images()
 
+        if not images:
+            raise RuntimeError("No `runner-disk-image' image found.")
+
         def get_created_at(image: _Image) -> _dt.datetime:
             return image.created_at
 
@@ -130,7 +133,7 @@ class _ServerFactory:
         *old_images, current_image = sorted_images
 
         for old_image in old_images:
-            _LOGGER.info("Delete stale runner disk image %s.", old_image.id)
+            _LOGGER.info("Delete stale runner disk image %s.", old_image)
             self._connection.image.delete_image(old_image.id)
 
         _LOGGER.info("Current runner disk image is %s.", current_image.id)
@@ -139,9 +142,6 @@ class _ServerFactory:
 
     def _get_disk_images(self) -> list[_Image]:
         disk_images = list(self._connection.image.images(name="runner-disk-image"))
-
-        if not disk_images:
-            raise RuntimeError("No `runner-disk-image' image found.")
 
         images = [_Image.create(id=i.id, created_at=i.created_at) for i in disk_images]
 
