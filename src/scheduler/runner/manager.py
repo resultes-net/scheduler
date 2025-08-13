@@ -32,13 +32,13 @@ class AbstractRunnerManager(_abc.ABC):
 
 @_dc.dataclass
 class _Image:
-    uuid: str
+    id: str
     created_at: _dt.datetime
 
     @staticmethod
-    def create(*, uuid: str, created_at: str) -> "_Image":
+    def create(*, id: str, created_at: str) -> "_Image":
         datetime = _dt.datetime.fromisoformat(created_at)
-        return _Image(uuid, datetime)
+        return _Image(id, datetime)
 
 
 class _BlockDeviceMapping(_tp.TypedDict):
@@ -113,12 +113,12 @@ class _ServerFactory:
         *old_images, current_image = sorted_images
 
         for old_image in old_images:
-            _LOGGER.info("Delete stale runner disk image %s.", old_image.uuid)
-            self._connection.image.delete_image(old_image.uuid)
+            _LOGGER.info("Delete stale runner disk image %s.", old_image.id)
+            self._connection.image.delete_image(old_image.id)
 
-        _LOGGER.info("Current runner disk image is %s.", current_image.uuid)
+        _LOGGER.info("Current runner disk image is %s.", current_image.id)
 
-        return current_image.uuid
+        return current_image.id
 
     def _get_disk_images(self) -> list[_Image]:
         disk_images = list(self._connection.image.images(name="runner-disk-image"))
@@ -126,7 +126,7 @@ class _ServerFactory:
         if not disk_images:
             raise RuntimeError("No `runner-disk-image' image found.")
 
-        images = [_Image.create(i.uuid, i.created_at) for i in disk_images]
+        images = [_Image.create(i.id, i.created_at) for i in disk_images]
 
         return images
 
