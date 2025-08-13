@@ -72,9 +72,7 @@ class RunnerClient:
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
-            program=_pl.PureWindowsPath(
-                r"E:\runner\python\python.exe"
-            ),
+            program=_pl.PureWindowsPath(r"E:\runner\python\python.exe"),
             args=[_pl.PureWindowsPath(r"run.pytrnsys")],
             working_dir=_pl.PureWindowsPath(r"systems-main\TTES"),
             results_glob_pattern="systems-main/TTES/results/*/",
@@ -95,7 +93,7 @@ class RunnerClient:
                 path=input_object_storage_zip_path,
             ),
             program=_pl.PureWindowsPath(r"E:\TRNSYS18\Exe\TrnEXE.exe"),
-            args=[variation.relative_deck_file_containing_dir_path],
+            args=[variation.relative_deck_file_containing_dir_path, "/H"],
             working_dir=variation.relative_deck_file_containing_dir_path.parent,
         )
 
