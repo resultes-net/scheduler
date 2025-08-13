@@ -94,7 +94,7 @@ class RunnerClient:
                 container="resultes-results",
                 path=input_object_storage_zip_path,
             ),
-            program=_pl.PureWindowsPath(r"C:\TRNSYS18\Exe\TrnEXE.exe"),
+            program=_pl.PureWindowsPath(r"E:\TRNSYS18\Exe\TrnEXE.exe"),
             args=[variation.relative_deck_file_containing_dir_path],
             working_dir=variation.relative_deck_file_containing_dir_path.parent,
         )
