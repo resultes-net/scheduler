@@ -53,7 +53,6 @@ _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
 
 
 class _ServerFactory:
-
     def __init__(self, connection: _oconn.Connection) -> None:
         self._connection = connection
 
@@ -103,7 +102,7 @@ class _ServerFactory:
 
         return block_device_mapping
 
-    def _delete_stale_disk_images_and_get_uuid_of_latest() -> str:
+    def _delete_stale_disk_images_and_get_uuid_of_latest(self) -> str:
         images = self._get_disk_images()
 
         def get_created_at(image: _Image) -> _dt.datetime:
