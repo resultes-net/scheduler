@@ -126,7 +126,7 @@ class _ServerFactory:
         if not disk_images:
             raise RuntimeError("No `runner-disk-image' image found.")
 
-        images = [_Image.create(i.id, i.created_at) for i in disk_images]
+        images = [_Image.create(id=i.id, created_at=i.created_at) for i in disk_images]
 
         return images
 
