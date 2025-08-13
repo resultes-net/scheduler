@@ -41,7 +41,7 @@ class _Image:
         return _Image(id, datetime)
 
 
-class _BlockDeviceMapping(_tp.TypedDict):
+class _MappedBlockDevice(_tp.TypedDict):
     uuid: str
     source_type: _tp.Literal["volume", "image"]
     destination_type: _tp.Literal["volume", "local"]
@@ -83,7 +83,7 @@ class _ServerFactory:
             seconds = 5.0
             _time.sleep(seconds)
 
-    def _get_block_device_mapping(self) -> _BlockDeviceMapping:
+    def _get_block_device_mapping(self) -> _cabc.Sequence[_MappedBlockDevice]:
         # To avoid a race condition between a new image being created in CI and us
         # spinning up a server here, we've arrived at the following scheme:
         #   1. Images are only ever added by CI
@@ -92,13 +92,15 @@ class _ServerFactory:
         # given moment exists at that time.
         image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
 
-        block_device_mapping: _BlockDeviceMapping = {
-            "uuid": image_uuid,
-            "source_type": "image",
-            "destination_type": "volume",
-            "volume_size": 2,
-            "delete_on_termination": True,
-        }
+        block_device_mapping: _cabc.Sequence[_MappedBlockDevice] = [
+            {
+                "uuid": image_uuid,
+                "source_type": "image",
+                "destination_type": "volume",
+                "volume_size": 2,
+                "delete_on_termination": True,
+            }
+        ]
 
         return block_device_mapping
 
