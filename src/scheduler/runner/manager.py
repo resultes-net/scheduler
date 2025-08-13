@@ -49,7 +49,11 @@ class _BlockDeviceMapping(_tp.TypedDict):
     delete_on_termination: bool
 
 
+_NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
+
+
 class _ServerFactory:
+
     def __init__(self, connection: _oconn.Connection) -> None:
         self._connection = connection
 
@@ -57,7 +61,7 @@ class _ServerFactory:
         image = self._connection.image.find_image("runner-image")
         flavor = self._connection.compute.find_flavor("a8-ram16-disk50-perf1")
 
-        network = self._connection.network.find_network(self._NETWORK_NAME)
+        network = self._connection.network.find_network(_NETWORK_NAME)
 
         block_device_mapping = self._get_block_device_mapping()
 
@@ -75,7 +79,7 @@ class _ServerFactory:
             server = self._connection.compute.find_server(server.id)
 
             if server.addresses:
-                return self._get_ip_address(server)
+                return _get_ip_address(server)
 
             seconds = 5.0
             _time.sleep(seconds)
@@ -129,8 +133,6 @@ class _ServerFactory:
 
 
 class RunnerManager(AbstractRunnerManager):
-    _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
-
     def __init__(self, os_password: str, clouds_yaml_file_path: _pl.Path) -> None:
         self._os_password = os_password
         self._clouds_yaml_file_path = clouds_yaml_file_path
@@ -162,7 +164,7 @@ class RunnerManager(AbstractRunnerManager):
                     _log.info("...no servers found.")
 
             for server in servers:
-                ip_address = self._get_ip_address(server)
+                ip_address = _get_ip_address(server)
                 _LOGGER.info(
                     "Deleting runner %s with IP address %s.", server.id, ip_address
                 )
@@ -185,9 +187,10 @@ class RunnerManager(AbstractRunnerManager):
 
         connection.close()
 
-    def _get_ip_address(self, server) -> str:
-        ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
-        return ip_address
+
+def _get_ip_address(server) -> str:
+    ip_address = server.addresses[_NETWORK_NAME][0]["addr"]
+    return ip_address
 
 
 class DummyRunnerManager(AbstractRunnerManager):
