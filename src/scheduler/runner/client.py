@@ -73,7 +73,7 @@ class RunnerClient:
                 path="pytrnsys-systems/systems-main.zip",
             ),
             program=_pl.PureWindowsPath(
-                r"C:\resultes\runner\python.exe"
+                r"E:\runner\python\python.exe"
             ),
             args=[_pl.PureWindowsPath(r"run.pytrnsys")],
             working_dir=_pl.PureWindowsPath(r"systems-main\TTES"),
