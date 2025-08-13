@@ -81,6 +81,12 @@ class _ServerFactory:
             _time.sleep(seconds)
 
     def _get_block_device_mapping(self) -> _BlockDeviceMapping:
+        # To avoid a race condition between a new image being created in CI and us
+        # spinning up a server here, we've arrived at the following scheme:
+        #   1. Images are only ever added by CI
+        #   2. And they are only ever deleted by the scheduler
+        # This makes sure the image that the scheduler has decided to use at any
+        # given moment exists at that time.
         image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
 
         block_device_mapping: _BlockDeviceMapping = {
