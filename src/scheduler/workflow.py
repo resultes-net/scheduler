@@ -127,7 +127,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     ) -> _cabc.Sequence[_sjsv.SimulateVariation]:
         waiting_variations = await self._server_client.get_waiting_variations()
 
-        if waiting_variations:
+        if waiting_variations.waiting_variations:
             data = _pprint.pformat(waiting_variations, indent=4)
 
             _LOGGER.info(
