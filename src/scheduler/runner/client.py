@@ -86,7 +86,7 @@ class RunnerClient:
         self,
         variation: _pvar.Variation,
     ) -> None:
-        input_object_storage_zip_path = f"{variation.simulation_id}.zip"
+        input_object_storage_zip_path = f"results/{variation.simulation_id}.zip"
 
         runner_job = _mrun.RunnerJob(
             id=variation.id,
