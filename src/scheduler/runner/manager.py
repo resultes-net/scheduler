@@ -63,7 +63,7 @@ class _ServerFactory:
 
         network = self._connection.network.find_network(_NETWORK_NAME)
 
-        block_device_mapping = self._get_block_device_mapping()
+        block_device_mapping = self._get_block_device_mapping(image_id)
 
         server = self._connection.compute.create_server(
             name="runner",
@@ -91,9 +91,7 @@ class _ServerFactory:
 
         return image.id
 
-    def _get_block_device_mapping(self) -> _cabc.Sequence[_MappedBlockDevice]:
-        boot_image_id = self._get_runner_image_id()
-
+    def _get_block_device_mapping(self, boot_image_id: str) -> _cabc.Sequence[_MappedBlockDevice]:
         # To avoid a race condition between a new image being created in CI and us
         # spinning up a server here, we've arrived at the following scheme:
         #   1. Images are only ever added by CI
