@@ -100,7 +100,7 @@ class _ServerFactory:
                 "destination_type": "volume",
                 "volume_size": 2,
                 "delete_on_termination": True,
-                "boot_index": None,
+                "boot_index": -1,
             }
         ]
 
