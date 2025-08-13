@@ -45,9 +45,9 @@ class _MappedBlockDevice(_tp.TypedDict):
     uuid: str
     source_type: _tp.Literal["volume", "image"]
     destination_type: _tp.Literal["volume", "local"]
-    volume_size: int
+    volume_size: _tp.NotRequired[int]
     delete_on_termination: bool
-    boot_index: int | None
+    boot_index: _tp.NotRequired[int | None]
 
 
 _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
@@ -58,7 +58,7 @@ class _ServerFactory:
         self._connection = connection
 
     def create_server_and_get_ip(self) -> str:
-        image = self._connection.image.find_image("runner-image")
+        image_id = self._get_runner_image_id()
         flavor = self._connection.compute.find_flavor("a8-ram16-disk50-perf1")
 
         network = self._connection.network.find_network(_NETWORK_NAME)
@@ -67,7 +67,7 @@ class _ServerFactory:
 
         server = self._connection.compute.create_server(
             name="runner",
-            image_id=image.id,
+            image_id=image_id,
             flavor_id=flavor.id,
             networks=[{"uuid": network.id}],
             security_groups=[{"name": "runner"}],
@@ -84,24 +84,39 @@ class _ServerFactory:
             seconds = 5.0
             _time.sleep(seconds)
 
+    def _get_runner_image_id(self) -> str:
+        image = self._connection.image.find_image("runner-image")
+        if not image:
+            raise RuntimeError("Runner image not found.")
+
+        return image.id
+
     def _get_block_device_mapping(self) -> _cabc.Sequence[_MappedBlockDevice]:
+        boot_image_id = self._get_runner_image_id()
+
         # To avoid a race condition between a new image being created in CI and us
         # spinning up a server here, we've arrived at the following scheme:
         #   1. Images are only ever added by CI
         #   2. And they are only ever deleted by the scheduler
         # This makes sure the image that the scheduler has decided to use at any
         # given moment exists at that time.
-        image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
+        disk_image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
 
         block_device_mapping: _cabc.Sequence[_MappedBlockDevice] = [
             {
-                "uuid": image_uuid,
+                "uuid": boot_image_id,
+                "source_type": "image",
+                "destination_type": "local",
+                "delete_on_termination": True,
+                "boot_index": 0,
+            },
+            {
+                "uuid": disk_image_uuid,
                 "source_type": "image",
                 "destination_type": "volume",
                 "volume_size": 2,
                 "delete_on_termination": True,
-                "boot_index": -1,
-            }
+            },
         ]
 
         return block_device_mapping
