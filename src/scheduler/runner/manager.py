@@ -47,6 +47,7 @@ class _MappedBlockDevice(_tp.TypedDict):
     destination_type: _tp.Literal["volume", "local"]
     volume_size: int
     delete_on_termination: bool
+    boot_index: int | None
 
 
 _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
@@ -99,6 +100,7 @@ class _ServerFactory:
                 "destination_type": "volume",
                 "volume_size": 2,
                 "delete_on_termination": True,
+                "boot_index": None,
             }
         ]
 
