@@ -1,15 +1,18 @@
 import abc as _abc
 import collections.abc as _cabc
 import contextlib as _ctx
+import dataclasses as _dc
+import datetime as _dt
 import logging as _log
 import pathlib as _pl
 import time as _time
+import typing as _tp
 
 import openstack as _ost
 import openstack.connection as _oconn
 import resultes_openstack_utils.clouds_yaml as _cyaml
 
-_LOG = _log.getLogger(__name__)
+_LOGGER = _log.getLogger(__name__)
 
 
 class AbstractRunnerManager(_abc.ABC):
@@ -27,6 +30,98 @@ class AbstractRunnerManager(_abc.ABC):
         raise NotImplementedError()
 
 
+@_dc.dataclass
+class _Image:
+    uuid: str
+    created_at: _dt.datetime
+
+    @staticmethod
+    def create(*, uuid: str, created_at: str) -> "_Image":
+        datetime = _dt.datetime.fromisoformat(created_at)
+        return _Image(uuid, datetime)
+
+
+class _BlockDeviceMapping(_tp.TypedDict):
+    uuid: str
+    source_type: _tp.Literal["volume", "image"]
+    destination_type: _tp.Literal["volume", "local"]
+    volume_size: int
+    delete_on_termination: bool
+
+
+class _ServerFactory:
+    def __init__(self, connection: _oconn.Connection) -> None:
+        self._connection = connection
+
+    def create_server_and_get_ip(self) -> str:
+        image = self._connection.image.find_image("runner-image")
+        flavor = self._connection.compute.find_flavor("a8-ram16-disk50-perf1")
+
+        network = self._connection.network.find_network(self._NETWORK_NAME)
+
+        block_device_mapping = self._get_block_device_mapping()
+
+        server = self._connection.compute.create_server(
+            name="runner",
+            image_id=image.id,
+            flavor_id=flavor.id,
+            networks=[{"uuid": network.id}],
+            security_groups=[{"name": "runner"}],
+            availability_zone="az-2",
+            block_device_mapping=block_device_mapping,
+        )
+
+        while True:
+            server = self._connection.compute.find_server(server.id)
+
+            if server.addresses:
+                return self._get_ip_address(server)
+
+            seconds = 5.0
+            _time.sleep(seconds)
+
+    def _get_block_device_mapping(self) -> _BlockDeviceMapping:
+        image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
+
+        block_device_mapping: _BlockDeviceMapping = {
+            "uuid": image_uuid,
+            "source_type": "image",
+            "destination_type": "volume",
+            "volume_size": 2,
+            "delete_on_termination": True,
+        }
+
+        return block_device_mapping
+
+    def _delete_stale_disk_images_and_get_uuid_of_latest() -> str:
+        images = self._get_disk_images()
+
+        def get_created_at(image: _Image) -> _dt.datetime:
+            return image.created_at
+
+        sorted_images = sorted(images, key=get_created_at)
+
+        *old_images, current_image = sorted_images
+
+        for old_image in old_images:
+            _LOGGER.info("Delete stale runner disk image %s.", old_image.uuid)
+            self._connection.image.delete_image(old_image.uuid)
+
+        _LOGGER.info("Current runner disk image is %s.", current_image.uuid)
+
+        return current_image.uuid
+
+    def _get_disk_images(self) -> list[_Image]:
+        disk_images = self._connection.image.find_image("runner-disk-image")
+
+        if not disk_images:
+            raise RuntimeError("No `runner-disk-image' image found.")
+
+        images = [_Image.create(i.uuid, i.created_at) for i in disk_images]
+
+        return images
+
+
 class RunnerManager(AbstractRunnerManager):
     _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
 
@@ -40,32 +135,9 @@ class RunnerManager(AbstractRunnerManager):
 
     def create_server_and_get_ip(self) -> str:
         with self._create_connection() as connection:
-            image = connection.image.find_image("build-image-server")
-            flavor = connection.compute.find_flavor("a8-ram16-disk50-perf1")
+            server_factory = _ServerFactory(connection)
 
-            network = connection.network.find_network(self._NETWORK_NAME)
-
-            server = connection.compute.create_server(
-                name="runner",
-                image_id=image.id,
-                flavor_id=flavor.id,
-                networks=[{"uuid": network.id}],
-                security_groups=[{"name": "runner"}],
-                availability_zone="az-2",
-            )
-
-        while True:
-            server = connection.compute.find_server(server.id)
-
-            if server.addresses:
-                return self._get_ip_address(server)
-
-            seconds = 5.0
-            _time.sleep(seconds)
-
-    def _get_ip_address(self, server) -> str:
-        ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
-        return ip_address
+            return server_factory.create_server_and_get_ip()
 
     def delete_servers(self, ip_address: str | None = None) -> None:
         _log.info("Deleting servers...")
@@ -85,7 +157,7 @@ class RunnerManager(AbstractRunnerManager):
 
             for server in servers:
                 ip_address = self._get_ip_address(server)
-                _LOG.info(
+                _LOGGER.info(
                     "Deleting runner %s with IP address %s.", server.id, ip_address
                 )
                 connection.compute.delete_server(server)
@@ -106,6 +178,10 @@ class RunnerManager(AbstractRunnerManager):
         yield connection
 
         connection.close()
+
+    def _get_ip_address(self, server) -> str:
+        ip_address = server.addresses[self._NETWORK_NAME][0]["addr"]
+        return ip_address
 
 
 class DummyRunnerManager(AbstractRunnerManager):
