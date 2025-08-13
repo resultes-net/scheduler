@@ -121,7 +121,7 @@ class _ServerFactory:
         return current_image.uuid
 
     def _get_disk_images(self) -> list[_Image]:
-        disk_images = self._connection.image.find_image("runner-disk-image")
+        disk_images = list(self._connection.image.images(name="runner-disk-image"))
 
         if not disk_images:
             raise RuntimeError("No `runner-disk-image' image found.")
