@@ -135,7 +135,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                 data,
             )
 
-        user_ids = {s.user_id: s.id for s in waiting_variations.associated_simulations}
+        user_ids = {s.id: s.user_id for s in waiting_variations.associated_simulations}
 
         simulate_variation_jobs = [
             _sjsv.SimulateVariation(v, user_ids[v.simulation_id], self._server_client)
