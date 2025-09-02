@@ -34,6 +34,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         runner_manager: _run.AbstractRunnerManager,
     ) -> None:
         self._server_client = server_client
+        self._runner_manager = runner_manager
         self._runner_clients_manager = _rcm.RunnerClientsManager(runner_manager)
 
         self._is_shutting_down = False
@@ -69,6 +70,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                     await self._process_jobs(task_group, runnable_jobs)
 
                     await self._runner_clients_manager.delete_any_idle_runners()
+                    self._runner_manager.delete_stale_disk_images()
 
                     next_wakeup_time = (
                         await self._adjust_wakeup_time_if_needed_and_sleep_until(

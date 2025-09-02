@@ -29,6 +29,10 @@ class AbstractRunnerManager(_abc.ABC):
     def delete_servers(self, ip_address: str | None = None) -> None:
         raise NotImplementedError()
 
+    @_abc.abstractmethod
+    def delete_stale_disk_images(self) -> None:
+        raise NotImplementedError()
+
 
 @_dc.dataclass
 class _Image:
@@ -51,6 +55,47 @@ class _MappedBlockDevice(_tp.TypedDict):
 
 
 _NETWORK_NAME = "k8s-clusterapi-cluster-pck-cfedjc3-pck-cfedjc3"
+
+
+class _DiskImages:
+    def __init__(self, connection: _oconn.Connection) -> None:
+        self._connection = connection
+
+    def get_current_disk_image_uuid(self) -> str:
+        current_image, _ = self._get_current_and_stale_images()
+        _LOGGER.info("Current runner disk image is %s.", current_image.id)
+        return current_image.id
+
+    def delete_stale_disk_images(self) -> None:
+        _, stale_images = self._get_current_and_stale_images()
+
+        for stale_image in stale_images:
+            _LOGGER.info("Delete stale runner disk image %s.", stale_image)
+            self._connection.image.delete_image(stale_image.id)
+
+    def _get_current_and_stale_images(
+        self,
+    ) -> _tp.Tuple[_Image, _cabc.Sequence[_Image]]:
+        images = self._get_disk_images()
+
+        if not images:
+            raise RuntimeError("No `runner-disk-image' image found.")
+
+        def get_created_at(image: _Image) -> _dt.datetime:
+            return image.created_at
+
+        sorted_images = sorted(images, key=get_created_at, reverse=True)
+
+        current_image, *stale_images = sorted_images
+
+        return current_image, stale_images
+
+    def _get_disk_images(self) -> list[_Image]:
+        disk_images = list(self._connection.image.images(name="runner-disk-image"))
+
+        images = [_Image.create(id=i.id, created_at=i.created_at) for i in disk_images]
+
+        return images
 
 
 class _ServerFactory:
@@ -91,14 +136,12 @@ class _ServerFactory:
 
         return image.id
 
-    def _get_block_device_mapping(self, boot_image_id: str) -> _cabc.Sequence[_MappedBlockDevice]:
-        # To avoid a race condition between a new image being created in CI and us
-        # spinning up a server here, we've arrived at the following scheme:
-        #   1. Images are only ever added by CI
-        #   2. And they are only ever deleted by the scheduler
-        # This makes sure the image that the scheduler has decided to use at any
-        # given moment exists at that time.
-        disk_image_uuid = self._delete_stale_disk_images_and_get_uuid_of_latest()
+    def _get_block_device_mapping(
+        self, boot_image_id: str
+    ) -> _cabc.Sequence[_MappedBlockDevice]:
+        disk_images = _DiskImages(self._connection)
+
+        disk_image_uuid = disk_images.get_current_disk_image_uuid()
 
         block_device_mapping: _cabc.Sequence[_MappedBlockDevice] = [
             {
@@ -118,34 +161,6 @@ class _ServerFactory:
         ]
 
         return block_device_mapping
-
-    def _delete_stale_disk_images_and_get_uuid_of_latest(self) -> str:
-        images = self._get_disk_images()
-
-        if not images:
-            raise RuntimeError("No `runner-disk-image' image found.")
-
-        def get_created_at(image: _Image) -> _dt.datetime:
-            return image.created_at
-
-        sorted_images = sorted(images, key=get_created_at)
-
-        *old_images, current_image = sorted_images
-
-        for old_image in old_images:
-            _LOGGER.info("Delete stale runner disk image %s.", old_image)
-            self._connection.image.delete_image(old_image.id)
-
-        _LOGGER.info("Current runner disk image is %s.", current_image.id)
-
-        return current_image.id
-
-    def _get_disk_images(self) -> list[_Image]:
-        disk_images = list(self._connection.image.images(name="runner-disk-image"))
-
-        images = [_Image.create(id=i.id, created_at=i.created_at) for i in disk_images]
-
-        return images
 
 
 class RunnerManager(AbstractRunnerManager):
@@ -188,6 +203,11 @@ class RunnerManager(AbstractRunnerManager):
 
             _log.info("...DONE: %i server(s) deleted.", len(servers))
 
+    def delete_stale_disk_images(self) -> None:
+        with self._create_connection() as connection:
+            disk_images = _DiskImages(connection)
+            disk_images.delete_stale_disk_images()
+
     @_ctx.contextmanager
     def _create_connection(self) -> _cabc.Iterator[_oconn.Connection]:
         data = _cyaml.get_clouds_yaml_openstack_json(self._clouds_yaml_file_path)
@@ -222,4 +242,7 @@ class DummyRunnerManager(AbstractRunnerManager):
         return self._ip_address
 
     def delete_servers(self, ip_address: str | None = None) -> None:
+        return
+
+    def delete_stale_disk_images(self) -> None:
         return
