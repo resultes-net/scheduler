@@ -33,7 +33,7 @@ async def main(
     runner_manager: _run.AbstractRunnerManager,
     polling_period_seconds: int,
 ) -> None:
-    _delete_stale_servers(runner_manager)
+    _delete_stale_ressources(runner_manager)
 
     try:
         async with _ahttp.ClientSession(server_base_uri) as server_session:
@@ -41,14 +41,16 @@ async def main(
             async with _wf.Looper(server_client, runner_manager) as looper:
                 await looper.loop(polling_period_seconds)
     finally:
-        _delete_stale_servers(runner_manager)
+        _delete_stale_ressources(runner_manager)
 
 
-def _delete_stale_servers(runner_manager: _run.AbstractRunnerManager):
+def _delete_stale_ressources(runner_manager: _run.AbstractRunnerManager):
     if _config.keepRunnersAlive():
         _config.log_keep_runners_alive_explanation()
     else:
         runner_manager.delete_servers()
+
+    runner_manager.delete_stale_disk_images()
 
 
 def _run_debugger() -> None:
@@ -96,7 +98,7 @@ if __name__ == "__main__":
         runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
     else:
         _LOGGER.info("Using dummy runner manager.")
-        host = f"{_soc.gethostname()}.local"
+        host = "172.25.224.1"  # f"{_soc.gethostname()}.local"
         runner_manager = _run.DummyRunnerManager(host, n_max_jobs_per_runner=512)
 
     coroutine = main(server_base_uri, runner_manager, polling_period_seconds)
