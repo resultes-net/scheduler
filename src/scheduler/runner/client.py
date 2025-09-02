@@ -86,9 +86,16 @@ class RunnerClient:
     ) -> None:
         input_object_storage_zip_path = f"results/{variation.simulation_id}.zip"
 
-        relative_deck_file_containing_dir_path = variation.relative_deck_file_containing_dir_path
-        
+        relative_deck_file_containing_dir_path = (
+            variation.relative_deck_file_containing_dir_path
+        )
+
         deck_file_name = f"{relative_deck_file_containing_dir_path.name}.dck"
+
+        relative_log_file_path = (
+            relative_deck_file_containing_dir_path
+            / f"{relative_deck_file_containing_dir_path.name}.log"
+        )
 
         runner_job = _mrun.RunnerJob(
             id=variation.id,
@@ -98,7 +105,8 @@ class RunnerClient:
             ),
             program=_pl.PureWindowsPath(r"E:\TRNSYS18\Exe\TrnEXE.exe"),
             args=[deck_file_name, "/H"],
-            working_dir=variation.relative_deck_file_containing_dir_path,
+            working_dir=relative_deck_file_containing_dir_path,
+            relative_log_file_path=relative_log_file_path,
         )
 
         await self._run_job_on_client(runner_job)
