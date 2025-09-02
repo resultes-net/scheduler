@@ -114,7 +114,7 @@ class _ServerFactory:
             name="runner",
             image_id=image_id,
             flavor_id=flavor.id,
-            key_name="runner_keypair"
+            key_name="runner_keypair",
             networks=[{"uuid": network.id}],
             security_groups=[{"name": "runner"}],
             availability_zone="az-2",
