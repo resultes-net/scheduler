@@ -76,7 +76,7 @@ class _DiskImages:
     def _get_current_and_stale_images(
         self,
     ) -> _tp.Tuple[_Image, _cabc.Sequence[_Image]]:
-        images = self._get_disk_images()
+        images = self._get_active_disk_images()
 
         if not images:
             raise RuntimeError("No `runner-disk-image' image found.")
@@ -90,8 +90,10 @@ class _DiskImages:
 
         return current_image, stale_images
 
-    def _get_disk_images(self) -> list[_Image]:
-        disk_images = list(self._connection.image.images(name="runner-disk-image"))
+    def _get_active_disk_images(self) -> list[_Image]:
+        disk_images = list(
+            self._connection.image.images(name="runner-disk-image", status="active")
+        )
 
         images = [_Image.create(id=i.id, created_at=i.created_at) for i in disk_images]
 
