@@ -25,6 +25,9 @@ class RunnerClientsManager:
         ]()
         self._runners_scheduler = _srun.RunnersScheduler()
 
+    def n_runners(self) -> int:
+        return len(self._runner_client_wrappers_by_ip_address)
+
     def get_n_jobs(self, user_id: str) -> int:
         return self._runners_scheduler.get_n_jobs(user_id)
 

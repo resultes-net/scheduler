@@ -18,6 +18,8 @@ import scheduler.server.server_client as _sc
 
 _LOGGER = _log.getLogger(__name__)
 
+_MAX_RUNNERS = 3
+
 
 class TerminateTaskGroup(Exception):
     pass
@@ -151,13 +153,18 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         task_group: _asyncio.TaskGroup,
         runnable_jobs: _cabc.Sequence[_jb.RunnableJobBase],
     ):
-        users_scheduler = self._create_users_scheduler(runnable_jobs)
+        jobs_scheduler = self._create_jobs_scheduler(runnable_jobs)
 
-        while users_scheduler.has_next_runnable_job():
+        while jobs_scheduler.has_next_runnable_job():
             if self._runner_clients_manager.have_all_runners_max_jobs():
+
+                if self._runner_clients_manager.n_runners == _MAX_RUNNERS:
+                    _LOGGER.warning("%d Idle job(s) while all runners busy.", jobs_scheduler.n_jobs)
+                    break
+                
                 await self._runner_clients_manager.create_new_runner()
 
-            next_runnable_job = users_scheduler.pop_next_runnable_job()
+            next_runnable_job = jobs_scheduler.pop_next_runnable_job()
 
             await next_runnable_job.set_started()
 
@@ -184,7 +191,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         finally:
             self._runner_clients_manager.remove_completed_job(runnable_job.id)
 
-    def _create_users_scheduler(
+    def _create_jobs_scheduler(
         self,
         runnable_jobs: _cabc.Sequence[_jb.RunnableJobBase],
     ) -> _susr.JobsScheduler:
@@ -193,9 +200,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         jobs_by_user_id = _it.groupby(runnable_jobs, key=get_user_id)
 
-        user_jobs = [self._create_user_jobs(k, list(vs)) for k, vs in jobs_by_user_id]
-        users_scheduler = _susr.JobsScheduler(user_jobs)
-        return users_scheduler
+        all_user_jobs = [self._create_user_jobs(k, list(vs)) for k, vs in jobs_by_user_id]
+        jobs_scheduler = _susr.JobsScheduler(all_user_jobs)
+        return jobs_scheduler
 
     def _create_user_jobs(
         self, user_id: str, runnable_jobs: _cabc.Sequence[_jb.RunnableJobBase]

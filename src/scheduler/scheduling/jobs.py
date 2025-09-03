@@ -19,6 +19,10 @@ class UserJobs:
 
         self._waiting_jobs = sorted(waiting_jobs, key=get_waiting_to_run_since)
 
+    @property
+    def n_waiting_jobs(self) -> int:
+        return len(self._waiting_jobs)
+
     def get_oldest_waiting_job(self) -> _jb.RunnableJobBase:
         return self._waiting_jobs[0]
 
@@ -41,23 +45,27 @@ class UserJobs:
 
 
 class JobsScheduler:
-    def __init__(self, user_jobs: _cabc.Iterable[UserJobs]) -> None:
-        self._user_jobs = list(user_jobs)
-        _heap.heapify(self._user_jobs)
+    def __init__(self, all_user_jobs: _cabc.Iterable[UserJobs]) -> None:
+        self._all_user_jobs = list(all_user_jobs)
+        _heap.heapify(self._all_user_jobs)
+
+    @property
+    def n_jobs(self) -> int:
+        return sum(u.n_waiting_jobs for u in self._all_user_jobs)
 
     def has_next_runnable_job(self) -> bool:
-        return bool(self._user_jobs)
+        return bool(self._all_user_jobs)
 
     def pop_next_runnable_job(self) -> _jb.RunnableJobBase:
         if not self.has_next_runnable_job():
             raise RuntimeError("No next job.")
 
-        next_user_jobs = _heap.heappop(self._user_jobs)
+        next_user_jobs = _heap.heappop(self._all_user_jobs)
 
         next_job = next_user_jobs.get_oldest_waiting_job()
 
         if not next_user_jobs.has_only_one_waiting_job():
             next_user_jobs.remove_oldest_waiting_job()
-            _heap.heappush(self._user_jobs, next_user_jobs)
+            _heap.heappush(self._all_user_jobs, next_user_jobs)
 
         return next_job
