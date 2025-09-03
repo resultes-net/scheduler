@@ -104,7 +104,7 @@ class RunnerClient:
                 path=input_object_storage_zip_path,
             ),
             program=_pl.PureWindowsPath(r"E:\TRNSYS18\Exe\TrnEXE.exe"),
-            args=[deck_file_name, "/N"],
+            args=[deck_file_name, "/H"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,
         )
