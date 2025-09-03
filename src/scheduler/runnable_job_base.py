@@ -3,15 +3,16 @@ from __future__ import annotations as _
 import abc as _abc
 import datetime as _dt
 import typing as _tp
-import secrets as _secs
 
 if _tp.TYPE_CHECKING:
     import scheduler.runner.client as _rc
 
 
-class RunnableJobBase(_abc.ABC):
-    def __init__(self) -> None:
-        self.id = _secs.token_hex(nbytes=5)
+class RunnableJobBase(_abc.ABC):   
+    @property
+    @_abc.abstractmethod
+    def id(self) -> str:
+        raise NotImplementedError()
 
     @property
     @_abc.abstractmethod

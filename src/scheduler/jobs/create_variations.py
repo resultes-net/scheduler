@@ -1,6 +1,7 @@
 import datetime as _dt
 import logging as _log
 import pathlib as _pl
+import typing as _tp
 
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
@@ -25,18 +26,27 @@ class CreateVariationsJob(_jb.RunnableJobBase):
         self._server_client = server_client
 
     @property
+    @_tp.override
+    def id(self) -> str:
+        return self._simulation.id
+
+    @property
+    @_tp.override
     def user_id(self) -> str:
         return self._simulation.user_id
 
     @property
+    @_tp.override
     def waiting_to_run_since(self) -> _dt.datetime:
         return self._simulation.state_changed_on
 
+    @_tp.override
     async def set_started(self) -> None:
         await self._server_client.set_simulation_state(
             self._simulation.id, _psim.SimulationState.CREATING_VARIATIONS
         )
 
+    @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
         relative_deck_file_paths = await runner_client.create_variations(
             self._simulation
