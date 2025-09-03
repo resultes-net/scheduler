@@ -19,5 +19,6 @@ class Context(_rjjs.ContextBase):
 
 @_jrpcs.method()
 def post_log_message(context: Context, level: int, message: str) -> _jrpcs.Result:
-    _LOGGER.log(level, "%s - %s", context.ip_address, message)
+    extra = {"remote_ip": context.ip_address}
+    _LOGGER.log(level, "%s", message, extra=extra)
     return _jrpcs.Success()

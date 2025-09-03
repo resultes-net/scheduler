@@ -11,7 +11,7 @@ import scheduler.runner.client_wrapper as _rcw
 
 @_pt.mark.asyncio
 async def test() -> None:
-    _log.basicConfig(level=_log.INFO, format=_clog.LOG_FORMAT)
+    _log.basicConfig(level=_log.INFO, format=_clog.LOCAL_LOG_FORMAT)
     _jrpcm.configure()
 
     _log.info("Logging is working!")

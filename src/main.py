@@ -60,9 +60,23 @@ def _run_debugger() -> None:
     debugpy.listen(5678)
 
 
+def _configure_logging(log_level: str) -> None:
+    root_logger = _log.getLogger()
+    root_logger.setLevel(log_level)
+
+    stream_handler = _log.StreamHandler()
+    stream_handler.setLevel(log_level)
+
+    formatter = _clog.Formatter()
+    stream_handler.setFormatter(formatter)
+
+    root_logger.addHandler(stream_handler)
+
+
 if __name__ == "__main__":
     log_level = _os.environ.get("LOG_LEVEL", "INFO")
-    _log.basicConfig(format=_clog.LOG_FORMAT, level=log_level)
+    _configure_logging(log_level)
+
     _LOGGER.info("Starting scheduler...")
 
     python_frozen_modules = _os.environ.get("PYTHON_FROZEN_MODULES")
@@ -98,7 +112,7 @@ if __name__ == "__main__":
         runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
     else:
         _LOGGER.info("Using dummy runner manager.")
-        host = "172.25.224.1"  # f"{_soc.gethostname()}.local"
+        host = f"{_soc.gethostname()}.local"
         runner_manager = _run.DummyRunnerManager(host, n_max_jobs_per_runner=512)
 
     coroutine = main(server_base_uri, runner_manager, polling_period_seconds)
