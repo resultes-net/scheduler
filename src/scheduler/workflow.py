@@ -18,7 +18,7 @@ import scheduler.server.server_client as _sc
 
 _LOGGER = _log.getLogger(__name__)
 
-_MAX_RUNNERS = 3
+_MAX_RUNNERS = 2
 
 
 class TerminateTaskGroup(Exception):
@@ -159,9 +159,11 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             if self._runner_clients_manager.have_all_runners_max_jobs():
 
                 if self._runner_clients_manager.n_runners == _MAX_RUNNERS:
-                    _LOGGER.warning("%d Idle job(s) while all runners busy.", jobs_scheduler.n_jobs)
+                    _LOGGER.warning(
+                        "%d Idle job(s) while all runners busy.", jobs_scheduler.n_runnable_jobs
+                    )
                     break
-                
+
                 await self._runner_clients_manager.create_new_runner()
 
             next_runnable_job = jobs_scheduler.pop_next_runnable_job()
@@ -200,7 +202,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         jobs_by_user_id = _it.groupby(runnable_jobs, key=get_user_id)
 
-        all_user_jobs = [self._create_user_jobs(k, list(vs)) for k, vs in jobs_by_user_id]
+        all_user_jobs = [
+            self._create_user_jobs(k, list(vs)) for k, vs in jobs_by_user_id
+        ]
         jobs_scheduler = _susr.JobsScheduler(all_user_jobs)
         return jobs_scheduler
 

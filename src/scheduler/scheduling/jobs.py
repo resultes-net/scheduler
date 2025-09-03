@@ -50,7 +50,7 @@ class JobsScheduler:
         _heap.heapify(self._all_user_jobs)
 
     @property
-    def n_jobs(self) -> int:
+    def n_runnable_jobs(self) -> int:
         return sum(u.n_waiting_jobs for u in self._all_user_jobs)
 
     def has_next_runnable_job(self) -> bool:
