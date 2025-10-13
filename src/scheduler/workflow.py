@@ -4,17 +4,15 @@ import contextlib as _ctx
 import datetime as _dt
 import itertools as _it
 import logging as _log
-import pprint as _pprint
 import typing as _tp
 
-import scheduler.jobs.create_variations as _sjcv
-import scheduler.jobs.simulate_variation as _sjsv
 import scheduler.runnable_job_base as _jb
 import scheduler.runner.client as _rc
 import scheduler.runner.manager as _run
 import scheduler.runner_clients_manager as _rcm
 import scheduler.scheduling.jobs as _susr
 import scheduler.server.server_client as _sc
+import scheduler.runnable_jobs_factory as _rjf
 
 _LOGGER = _log.getLogger(__name__)
 
@@ -67,7 +65,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         try:
             async with _asyncio.TaskGroup() as task_group:
                 while not self._is_shutting_down:
-                    runnable_jobs = await self._create_runnable_jobs()
+                    runnable_jobs_factory = _rjf.RunnableJobsFactory(self._server_client)
+
+                    runnable_jobs = await runnable_jobs_factory.create_runnable_jobs()
 
                     await self._process_jobs(task_group, runnable_jobs)
 
@@ -92,62 +92,6 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             _LOGGER.error("Exception occurred: %s. Terminating.", exception)
             raise
 
-    async def _create_runnable_jobs(self) -> _cabc.Sequence[_jb.RunnableJobBase]:
-        create_variations_jobs = await self._create_create_variations_jobs()
-
-        simulate_variation_jobs = await self._create_simulate_variation_jobs()
-
-        runnable_jobs: _cabc.Sequence[_jb.RunnableJobBase] = [
-            *create_variations_jobs,
-            *simulate_variation_jobs,
-        ]
-
-        return runnable_jobs
-
-    async def _create_create_variations_jobs(
-        self,
-    ) -> _cabc.Sequence[_sjcv.CreateVariationsJob]:
-        waiting_simulations = (
-            await self._server_client.get_simulations_waiting_for_variations_creation()
-        )
-
-        if waiting_simulations:
-            data = _pprint.pformat(waiting_simulations, indent=4)
-
-            _LOGGER.info(
-                "Found the following simulations for which to create variations: %s\n",
-                data,
-            )
-
-        create_variations_jobs = [
-            _sjcv.CreateVariationsJob(s, self._server_client)
-            for s in waiting_simulations
-        ]
-
-        return create_variations_jobs
-
-    async def _create_simulate_variation_jobs(
-        self,
-    ) -> _cabc.Sequence[_sjsv.SimulateVariation]:
-        waiting_variations = await self._server_client.get_waiting_variations()
-
-        if waiting_variations.waiting_variations:
-            data = _pprint.pformat(waiting_variations, indent=4)
-
-            _LOGGER.info(
-                "Found the following variations waiting to be simulated: %s\n",
-                data,
-            )
-
-        user_ids = {s.id: s.user_id for s in waiting_variations.associated_simulations}
-
-        simulate_variation_jobs = [
-            _sjsv.SimulateVariation(v, user_ids[v.simulation_id], self._server_client)
-            for v in waiting_variations.waiting_variations
-        ]
-
-        return simulate_variation_jobs
-
     async def _process_jobs(
         self,
         task_group: _asyncio.TaskGroup,
@@ -160,7 +104,8 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
                 if self._runner_clients_manager.n_runners == _MAX_RUNNERS:
                     _LOGGER.warning(
-                        "%d Idle job(s) while all runners busy.", jobs_scheduler.n_runnable_jobs
+                        "%d Idle job(s) while all runners busy.",
+                        jobs_scheduler.n_runnable_jobs,
                     )
                     break
 

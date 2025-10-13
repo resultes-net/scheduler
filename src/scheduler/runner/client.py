@@ -1,6 +1,7 @@
 import collections.abc as _cabc
 import logging as _log
 import pathlib as _pl
+import typing as _tp
 
 import aiohttp as _ahttp
 import resultes_jsonrpc.jsonrpc.client as _rjjc
@@ -9,6 +10,8 @@ import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.jsonrpc.types as _tps
 import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
+import resultes_pydantic_models.simulations.parameters.ptes as _pptes
+import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
@@ -66,6 +69,19 @@ class RunnerClient:
         self,
         simulation: _psim.Simulation,
     ) -> _cabc.Sequence[str]:
+        match simulation.parameters:
+            case _pttes.TtesParameters():
+                system_name = "TTES"
+            case _pptes.PtesParameters():
+                system_name = "PTES"
+
+        runner_job = self._create_runner_job(simulation, system_name)
+        
+        return await self._run_job_on_client(runner_job)
+
+    def _create_runner_job(
+        self, simulation: _psim.Simulation, system_name: _tp.Literal["TTES", "PTES"]
+    ) -> _mrun.RunnerJob:
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
             object_storage_path=_mrun.ObjectStorageZipPath(
@@ -74,13 +90,13 @@ class RunnerClient:
             ),
             program=_pl.PureWindowsPath(r"E:\runner\python\python.exe"),
             args=["run.pytrnsys"],
-            working_dir=_pl.PureWindowsPath(r"systems-main\TTES"),
-            results_glob_pattern="systems-main/TTES/results/*/",
+            working_dir=_pl.PureWindowsPath("systems-main") / system_name,
+            results_glob_pattern=f"systems-main/{system_name}/results/*/",
         )
 
-        return await self._run_job_on_client(runner_job)
+        return runner_job
 
-    async def simulate_variation(
+    async def simulate_and_post_process_variation(
         self,
         variation: _pvar.Variation,
     ) -> None:

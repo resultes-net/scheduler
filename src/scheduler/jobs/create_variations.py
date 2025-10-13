@@ -1,4 +1,3 @@
-import datetime as _dt
 import logging as _log
 import pathlib as _pl
 import typing as _tp
@@ -6,39 +5,22 @@ import typing as _tp
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
-import scheduler.runnable_job_base as _jb
 import scheduler.runner.client as _rc
 import scheduler.server.server_client as _sc
+
+from . import _simulation_job_base as _sj
 
 _LOGGER = _log.getLogger(__name__)
 
 
-class CreateVariationsJob(_jb.RunnableJobBase):
+class CreateVariationsJob(_sj.SimulationJobBase):
     def __init__(
         self, simulation: _psim.Simulation, server_client: _sc.ServerClient
     ) -> None:
         if simulation.state != _psim.SimulationState.WAITING_FOR_VARIATIONS_CREATION:
             raise ValueError("Simulation not waiting for creations of variations.")
 
-        super().__init__()
-
-        self._simulation = simulation
-        self._server_client = server_client
-
-    @property
-    @_tp.override
-    def id(self) -> str:
-        return self._simulation.id
-
-    @property
-    @_tp.override
-    def user_id(self) -> str:
-        return self._simulation.user_id
-
-    @property
-    @_tp.override
-    def waiting_to_run_since(self) -> _dt.datetime:
-        return self._simulation.state_changed_on
+        super().__init__(simulation, server_client)
 
     @_tp.override
     async def set_started(self) -> None:

@@ -11,7 +11,7 @@ import scheduler.server.server_client as _sc
 _LOGGER = _log.getLogger(__name__)
 
 
-class SimulateVariation(_jb.RunnableJobBase):
+class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
     def __init__(
         self, variation: _pvar.Variation, user_id: str, server_client: _sc.ServerClient
     ) -> None:
@@ -50,7 +50,7 @@ class SimulateVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        await runner_client.simulate_variation(self._variation)
+        await runner_client.simulate_and_post_process_variation(self._variation)
 
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.DONE
