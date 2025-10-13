@@ -2,7 +2,7 @@ import asyncio as _asyncio
 import logging as _log
 import os as _os
 import signal as _sig
-import socket as _soc
+import subprocess as _sp
 
 import aiohttp as _ahttp
 
@@ -73,6 +73,24 @@ def _configure_logging(log_level: str) -> None:
     root_logger.addHandler(stream_handler)
 
 
+def _get_windows_host_ip_address() -> str:
+    # Python translation of `bash` snippet found here:
+    # https://learn.microsoft.com/en-us/windows/wsl/networking#identify-ip-address
+
+    completed_process = _sp.run(
+        "ip route show".split(), capture_output=True, text=True, check=True
+    )
+
+    routes = completed_process.stdout.splitlines()
+
+    default_routes = [r for r in routes if "default" in r]
+    assert len(default_routes) == 1
+    default_route = default_routes[0]
+
+    _, _, ip_address, *_ = default_route.split()
+    return ip_address
+
+
 if __name__ == "__main__":
     log_level = _os.environ.get("LOG_LEVEL", "INFO")
     _configure_logging(log_level)
@@ -112,7 +130,7 @@ if __name__ == "__main__":
         runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
     else:
         _LOGGER.info("Using dummy runner manager.")
-        host = f"{_soc.gethostname()}.local"
+        host = _get_windows_host_ip_address()
         runner_manager = _run.DummyRunnerManager(host, n_max_jobs_per_runner=512)
 
     coroutine = main(server_base_uri, runner_manager, polling_period_seconds)

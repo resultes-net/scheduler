@@ -74,9 +74,11 @@ class RunnerClient:
                 system_name = "TTES"
             case _pptes.PtesParameters():
                 system_name = "PTES"
+            case _:
+                _tp.assert_never(simulation.parameters)
 
         runner_job = self._create_runner_job(simulation, system_name)
-        
+
         return await self._run_job_on_client(runner_job)
 
     def _create_runner_job(
