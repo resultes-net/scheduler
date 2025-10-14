@@ -39,7 +39,7 @@ class RunnerClientsManager:
         ip_address = await _asyncio.to_thread(
             self._runner_manager.create_server_and_get_ip
         )
-        _LOGGER.info("...DONE. New runner with ip address %s created.", ip_address)
+        _LOGGER.info("...DONE. New runner with IP address %s created.", ip_address)
         runner_client_wrapper = await self._create_client_wrapper(ip_address)
         self._runner_client_wrappers_by_ip_address[ip_address] = runner_client_wrapper
 
