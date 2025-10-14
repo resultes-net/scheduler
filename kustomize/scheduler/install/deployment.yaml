@@ -37,9 +37,9 @@ spec:
             - name: USE_OPENSTACK
               value: "1"
             - name: TRNEXE
-              value: "E:\TRNSYS18\Exe\TrnEXE.exe"
+              value: 'E:\TRNSYS18\Exe\TrnEXE.exe'
             - name: PYTHON_EXE
-              value: "E:\runner\python\python.exe"
+              value: 'E:\runner\python\python.exe'
             - name: OS_PASSWORD
               valueFrom:
                 secretKeyRef:
