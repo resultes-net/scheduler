@@ -1,5 +1,6 @@
 import collections.abc as _cabc
 import logging as _log
+import os as _os
 import pathlib as _pl
 import typing as _tp
 
@@ -20,6 +21,14 @@ import scheduler.jrpc_methods as _jrpcm
 _jrpcm.configure()
 
 _LOGGER = _log.getLogger(__name__)
+
+_DEFAULT_TRNEXE_PATH = r"create-disk-image\contents\TRNSYS18\Exe\TrnEXE.exe"
+
+_TRNEXE_PATH = _pl.PureWindowsPath(_os.environ.get("TRNEXE", _DEFAULT_TRNEXE_PATH))
+
+_DEFAULT_PYTHON_EXE_PATH = r"venv\Scripts\python.exe"
+
+_PYTHON_EXE_PATH = _pl.PureWindowsPath(_os.environ.get("PYTHON_EXE", _DEFAULT_PYTHON_EXE_PATH))
 
 
 class RunnerClient:
@@ -77,11 +86,11 @@ class RunnerClient:
             case _:
                 _tp.assert_never(simulation.parameters)
 
-        runner_job = self._create_runner_job(simulation, system_name)
+        runner_job = self._create_create_variations_runner_job(simulation, system_name)
 
         return await self._run_job_on_client(runner_job)
 
-    def _create_runner_job(
+    def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation, system_name: _tp.Literal["TTES", "PTES"]
     ) -> _mrun.RunnerJob:
         runner_job = _mrun.RunnerJob(
@@ -90,7 +99,7 @@ class RunnerClient:
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
-            program=_pl.PureWindowsPath(r"E:\runner\python\python.exe"),
+            program=_PYTHON_EXE_PATH,
             args=["run.pytrnsys"],
             working_dir=_pl.PureWindowsPath("systems-main") / system_name,
             results_glob_pattern=f"systems-main/{system_name}/results/*/",
@@ -121,7 +130,7 @@ class RunnerClient:
                 container="resultes-results",
                 path=input_object_storage_zip_path,
             ),
-            program=_pl.PureWindowsPath(r"E:\TRNSYS18\Exe\TrnEXE.exe"),
+            program=_TRNEXE_PATH,
             args=[deck_file_name, "/N"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,
