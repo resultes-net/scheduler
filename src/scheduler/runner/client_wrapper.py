@@ -1,6 +1,7 @@
 import aiohttp as _ahttp
 
 import scheduler.runner.client as _rc
+import scheduler.runner.paths as _rp
 
 
 class RunnerClientWrapper:
@@ -17,7 +18,10 @@ class RunnerClientWrapper:
         self._client: _rc.RunnerClient | None = runner_client
 
     @staticmethod
-    async def create(ip_address: str) -> "RunnerClientWrapper":
+    async def create(
+        ip_address: str,
+        paths: _rp.Paths,
+    ) -> "RunnerClientWrapper":
         base_uri = f"http://{ip_address}:3000"
 
         session = _ahttp.ClientSession(base_uri)
@@ -33,7 +37,12 @@ class RunnerClientWrapper:
             await session.close()
             raise
 
-        client = _rc.RunnerClient(requests_websocket, logging_websocket, ip_address)
+        client = _rc.RunnerClient(
+            requests_websocket,
+            logging_websocket,
+            ip_address,
+            paths,
+        )
         client.start()
 
         return RunnerClientWrapper(
@@ -50,5 +59,8 @@ class RunnerClientWrapper:
     async def shut_down(self) -> None:
         await self._requests_websocket.close()
         await self._logging_websocket.close()
+
         await self.client.join()
+        self._client = None
+
         await self._session.close()

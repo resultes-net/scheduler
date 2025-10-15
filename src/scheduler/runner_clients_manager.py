@@ -8,6 +8,7 @@ import scheduler.runnable_job_base as _jb
 import scheduler.runner.client as _rc
 import scheduler.runner.client_wrapper as _rcw
 import scheduler.runner.manager as _run
+import scheduler.runner.paths as _rp
 import scheduler.scheduling.runners as _srun
 
 _LOGGER = _log.getLogger(__name__)
@@ -17,8 +18,10 @@ class RunnerClientsManager:
     def __init__(
         self,
         runner_manager: _run.AbstractRunnerManager,
+        paths: _rp.Paths,
     ) -> None:
         self._runner_manager = runner_manager
+        self._paths = paths
 
         self._runner_client_wrappers_by_ip_address = dict[
             str, _rcw.RunnerClientWrapper
@@ -57,7 +60,8 @@ class RunnerClientsManager:
                 while True:
                     try:
                         client_wrapper = await _rcw.RunnerClientWrapper.create(
-                            ip_address
+                            ip_address,
+                            self._paths,
                         )
                         _LOGGER.info(
                             "...DONE trying to connect to runner %s.", ip_address

@@ -1,6 +1,5 @@
 import collections.abc as _cabc
 import logging as _log
-import os as _os
 import pathlib as _pl
 import typing as _tp
 
@@ -17,18 +16,11 @@ import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
 import scheduler.jrpc_methods as _jrpcm
+import scheduler.runner.paths as _rp
 
 _jrpcm.configure()
 
 _LOGGER = _log.getLogger(__name__)
-
-_DEFAULT_TRNEXE_PATH = r"create-disk-image\contents\TRNSYS18\Exe\TrnEXE.exe"
-
-_TRNEXE_PATH = _pl.PureWindowsPath(_os.environ.get("TRNEXE", _DEFAULT_TRNEXE_PATH))
-
-_DEFAULT_PYTHON_EXE_PATH = r"venv\Scripts\python.exe"
-
-_PYTHON_EXE_PATH = _pl.PureWindowsPath(_os.environ.get("PYTHON_EXE", _DEFAULT_PYTHON_EXE_PATH))
 
 
 class RunnerClient:
@@ -37,6 +29,7 @@ class RunnerClient:
         requests_websocket: _ahttp.ClientWebSocketResponse,
         logging_websocket: _ahttp.ClientWebSocketResponse,
         ip_address: str,
+        paths: _rp.Paths,
     ) -> None:
         self._jsonrpc_client = _rjjc.JsonRpcClient(requests_websocket)
         self._requests_websocket_client = _rjwc.WebsocketClient(
@@ -51,6 +44,8 @@ class RunnerClient:
         self._logging_websocket_client = _rjwc.WebsocketClient(
             logging_websocket, self._jsonrpc_server
         )
+
+        self._paths = paths
 
         self._started = False
 
@@ -99,7 +94,7 @@ class RunnerClient:
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
-            program=_PYTHON_EXE_PATH,
+            program=self._paths.python_exe,
             args=["run.pytrnsys"],
             working_dir=_pl.PureWindowsPath("systems-main") / system_name,
             results_glob_pattern=f"systems-main/{system_name}/results/*/",
@@ -130,7 +125,7 @@ class RunnerClient:
                 container="resultes-results",
                 path=input_object_storage_zip_path,
             ),
-            program=_TRNEXE_PATH,
+            program=self._paths.trnexe_exe,
             args=[deck_file_name, "/N"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,

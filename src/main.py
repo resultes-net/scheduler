@@ -1,6 +1,7 @@
 import asyncio as _asyncio
 import logging as _log
 import os as _os
+import pathlib as _pl
 import signal as _sig
 import subprocess as _sp
 
@@ -10,6 +11,7 @@ import scheduler.clouds_yaml as _cyaml
 import scheduler.config as _config
 import scheduler.log_config as _clog
 import scheduler.runner.manager as _run
+import scheduler.runner.paths as _rp
 import scheduler.server.server_client as _sc
 import scheduler.workflow as _wf
 
@@ -32,13 +34,18 @@ async def main(
     server_base_uri: str,
     runner_manager: _run.AbstractRunnerManager,
     polling_period_seconds: int,
+    paths: _rp.Paths,
 ) -> None:
     _delete_stale_ressources(runner_manager)
 
     try:
         async with _ahttp.ClientSession(server_base_uri) as server_session:
             server_client = _sc.ServerClient(server_session)
-            async with _wf.Looper(server_client, runner_manager) as looper:
+            async with _wf.Looper(
+                server_client,
+                runner_manager,
+                paths,
+            ) as looper:
                 await looper.loop(polling_period_seconds)
     finally:
         _delete_stale_ressources(runner_manager)
@@ -133,6 +140,18 @@ if __name__ == "__main__":
         host = _get_windows_host_ip_address()
         runner_manager = _run.DummyRunnerManager(host, n_max_jobs_per_runner=512)
 
-    coroutine = main(server_base_uri, runner_manager, polling_period_seconds)
+    default_trnexe_path = r"create-disk-image\contents\TRNSYS18\Exe\TrnEXE.exe"
+
+    trnexe_path = _pl.PureWindowsPath(_os.environ.get("TRNEXE", default_trnexe_path))
+
+    default_python_exe_path = r"venv\Scripts\python.exe"
+
+    python_exe_path = _pl.PureWindowsPath(
+        _os.environ.get("PYTHON_EXE", default_python_exe_path)
+    )
+
+    paths = _rp.Paths(trnexe_path, python_exe_path)
+
+    coroutine = main(server_base_uri, runner_manager, polling_period_seconds, paths)
 
     _asyncio.run(coroutine)

@@ -7,12 +7,13 @@ import logging as _log
 import typing as _tp
 
 import scheduler.runnable_job_base as _jb
+import scheduler.runnable_jobs_factory as _rjf
 import scheduler.runner.client as _rc
 import scheduler.runner.manager as _run
+import scheduler.runner.paths as _rp
 import scheduler.runner_clients_manager as _rcm
 import scheduler.scheduling.jobs as _susr
 import scheduler.server.server_client as _sc
-import scheduler.runnable_jobs_factory as _rjf
 
 _LOGGER = _log.getLogger(__name__)
 
@@ -32,10 +33,11 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         self,
         server_client: _sc.ServerClient,
         runner_manager: _run.AbstractRunnerManager,
+        paths: _rp.Paths,
     ) -> None:
         self._server_client = server_client
         self._runner_manager = runner_manager
-        self._runner_clients_manager = _rcm.RunnerClientsManager(runner_manager)
+        self._runner_clients_manager = _rcm.RunnerClientsManager(runner_manager, paths)
 
         self._is_shutting_down = False
 
@@ -65,7 +67,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         try:
             async with _asyncio.TaskGroup() as task_group:
                 while not self._is_shutting_down:
-                    runnable_jobs_factory = _rjf.RunnableJobsFactory(self._server_client)
+                    runnable_jobs_factory = _rjf.RunnableJobsFactory(
+                        self._server_client
+                    )
 
                     runnable_jobs = await runnable_jobs_factory.create_runnable_jobs()
 
