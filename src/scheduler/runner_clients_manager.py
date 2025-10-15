@@ -64,7 +64,7 @@ class RunnerClientsManager:
             _config.runner_shall_remove_completed_jobs()
         )
         if not runner_shall_remove_completed_jobs:
-            _config.log_runner_shall_not_delete_completed_jobs_explanation()
+            _config.log_runner_shall_not_remove_completed_jobs_explanation()
 
         await runner_client.set_options(
             runner_log_level, runner_shall_remove_completed_jobs

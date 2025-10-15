@@ -25,11 +25,11 @@ def log_run_debugger_explanation() -> None:
 
 
 def runner_shall_remove_completed_jobs() -> bool:
-    return _read_bool_value("runnerShallDeleteCompletedJobs")
+    return _read_bool_value("runnerShallRemoveCompletedJobs")
 
 
-def log_runner_shall_not_delete_completed_jobs_explanation() -> None:
-    _LOGGER.warning("Not deleting completed jobs on runners %s.", _BECAUSE)
+def log_runner_shall_not_remove_completed_jobs_explanation() -> None:
+    _LOGGER.warning("Not removing completed jobs on runners %s.", _BECAUSE)
 
 
 def runner_log_level() -> str:
