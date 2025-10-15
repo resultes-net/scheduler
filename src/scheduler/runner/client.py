@@ -69,6 +69,20 @@ class RunnerClient:
         await self._requests_websocket_client.join()
         await self._logging_websocket_client.join()
 
+    async def set_options(
+        self,
+        log_level: str,
+        shall_remove_completed_jobs: bool,
+    ) -> None:
+        runner_options = _mrun.RunnerOptions(
+            log_level=log_level, shall_remove_completed_jobs=shall_remove_completed_jobs
+        )
+        params: _rjrpct.JsonStructured = {"runner_options": runner_options.model_dump()}
+
+        return await self._jsonrpc_client.send_request_and_check_and_get_response(
+            "set_options", params
+        )
+
     async def create_variations(
         self,
         simulation: _psim.Simulation,

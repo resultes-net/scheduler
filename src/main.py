@@ -52,7 +52,7 @@ async def main(
 
 
 def _delete_stale_ressources(runner_manager: _run.AbstractRunnerManager):
-    if _config.keepRunnersAlive():
+    if _config.keep_runners_alive():
         _config.log_keep_runners_alive_explanation()
     else:
         runner_manager.delete_servers()

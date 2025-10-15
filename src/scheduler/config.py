@@ -5,15 +5,15 @@ _MOUNT_DIR_PATH = _pl.Path(__file__).parents[2] / "config-cm"
 
 _LOGGER = _log.getLogger(__name__)
 
+_BECAUSE = "because we were told to do so in the scheduler/config-cm configMap"
 
-def keepRunnersAlive() -> bool:
+
+def keep_runners_alive() -> bool:
     return _read_bool_value("keepRunnersAlive")
 
 
 def log_keep_runners_alive_explanation() -> None:
-    _LOGGER.warning(
-        "Not deleting runners because we were told to keep them alive in the scheduler/config-cm configMap."
-    )
+    _LOGGER.warning("Not deleting runners %s.", _BECAUSE)
 
 
 def run_debugger() -> bool:
@@ -21,9 +21,23 @@ def run_debugger() -> bool:
 
 
 def log_run_debugger_explanation() -> None:
-    _LOGGER.warning(
-        "Running debugger because we were told to do so in the scheduler/config-cm configMap."
-    )
+    _LOGGER.warning("Running debugger %s.", _BECAUSE)
+
+
+def runner_shall_remove_completed_jobs() -> bool:
+    return _read_bool_value("runnerShallDeleteCompletedJobs")
+
+
+def log_runner_shall_not_delete_completed_jobs_explanation() -> None:
+    _LOGGER.warning("Not deleting completed jobs on runners %s.", _BECAUSE)
+
+
+def runner_log_level() -> str:
+    return _read_str_value("runnerLogLevel")
+
+
+def log_runner_log_level_not_info_explanation() -> None:
+    _LOGGER.warning("Runner log level not INFO %s.", _BECAUSE)
 
 
 def _read_bool_value(file_name: str) -> bool:
@@ -39,3 +53,9 @@ def _read_bool_value(file_name: str) -> bool:
         raise ValueError(
             f"Expected {file_path} to contain 'true' or 'false' but found {value}."
         )
+
+
+def _read_str_value(file_name: str) -> str:
+    file_path = _MOUNT_DIR_PATH / file_name
+
+    return file_path.read_text()

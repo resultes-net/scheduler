@@ -44,10 +44,30 @@ class RunnerClientsManager:
         )
         _LOGGER.info("...DONE. New runner with IP address %s created.", ip_address)
         runner_client_wrapper = await self._create_client_wrapper(ip_address)
+
+        await self._set_options(runner_client_wrapper.client)
+
         self._runner_client_wrappers_by_ip_address[ip_address] = runner_client_wrapper
 
         self._runners_scheduler.add_runner(
             ip_address, self._runner_manager.n_max_jobs_per_runner
+        )
+
+    async def _set_options(self, runner_client: _rc.RunnerClient) -> None:
+        info = _log.getLevelName(_log.INFO)
+
+        runner_log_level = _config.runner_log_level()
+        if runner_log_level != info:
+            _config.log_runner_log_level_not_info_explanation()
+
+        runner_shall_remove_completed_jobs = (
+            _config.runner_shall_remove_completed_jobs()
+        )
+        if not runner_shall_remove_completed_jobs:
+            _config.log_runner_shall_not_delete_completed_jobs_explanation()
+
+        await runner_client.set_options(
+            runner_log_level, runner_shall_remove_completed_jobs
         )
 
     async def _create_client_wrapper(self, ip_address: str) -> _rcw.RunnerClientWrapper:
@@ -102,7 +122,7 @@ class RunnerClientsManager:
         self._runners_scheduler.remove_completed_job(job_id)
 
     async def delete_any_idle_runners(self) -> None:
-        if _config.keepRunnersAlive():
+        if _config.keep_runners_alive():
             _config.log_keep_runners_alive_explanation()
             return
 
