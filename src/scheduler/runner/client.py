@@ -79,7 +79,7 @@ class RunnerClient:
         )
         params: _rjrpct.JsonStructured = {"runner_options": runner_options.model_dump()}
 
-        return await self._jsonrpc_client.send_request_and_check_and_get_response(
+        await self._jsonrpc_client.send_request_and_check_and_get_response(
             "set_options", params
         )
 
@@ -102,16 +102,29 @@ class RunnerClient:
     def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation, system_name: _tp.Literal["TTES", "PTES"]
     ) -> _mrun.RunnerJob:
-        runner_job = _mrun.RunnerJob(
-            id=simulation.id,
-            object_storage_path=_mrun.ObjectStorageZipPath(
-                container="resultes-static",
-                path="pytrnsys-systems/systems-main.zip",
-            ),
+        command = _mrun.Command(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
             working_dir=_pl.PureWindowsPath("systems-main") / system_name,
-            results_glob_pattern=f"systems-main/{system_name}/results/*/",
+        )
+
+        object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
+            container="resultes-results", path=f"{simulation.id}.zip"
+        )
+        result = _mrun.MultipleFilesResult(
+            glob_patterns=["**"],
+            object_storage_output_file_path=object_storage_output_path,
+        )
+
+        runner_job = _mrun.RunnerJob(
+            id=simulation.id,
+            object_storage_input_path=_mrun.ObjectStorageInputZipFilePath(
+                container="resultes-static",
+                path="pytrnsys-systems/systems-main.zip",
+            ),
+            commands=[command],
+            results=[result],
+            return_paths_glob_pattern=f"systems-main/{system_name}/results/*/",
         )
 
         return runner_job
@@ -120,7 +133,12 @@ class RunnerClient:
         self,
         variation: _pvar.Variation,
     ) -> None:
-        input_object_storage_zip_path = f"results/{variation.simulation_id}.zip"
+        object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
+
+        object_storage_input_path = _mrun.ObjectStorageInputZipFilePath(
+            container="resultes-results",
+            path=object_storage_input_zip_path,
+        )
 
         relative_deck_file_containing_dir_path = (
             variation.relative_deck_file_containing_dir_path
@@ -133,16 +151,26 @@ class RunnerClient:
             / f"{relative_deck_file_containing_dir_path.name}.log"
         )
 
-        runner_job = _mrun.RunnerJob(
-            id=variation.id,
-            object_storage_path=_mrun.ObjectStorageZipPath(
-                container="resultes-results",
-                path=input_object_storage_zip_path,
-            ),
+        command = _mrun.Command(
             program=self._paths.trnexe_exe,
             args=[deck_file_name, "/N"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,
+        )
+
+        object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
+            container="resultes-results", path=f"{variation.id}.zip"
+        )
+        result = _mrun.MultipleFilesResult(
+            glob_patterns=["**"],
+            object_storage_output_file_path=object_storage_output_path,
+        )
+
+        runner_job = _mrun.RunnerJob(
+            id=variation.id,
+            object_storage_input_path=object_storage_input_path,
+            commands=[command],
+            results=[result],
         )
 
         await self._run_job_on_client(runner_job)
