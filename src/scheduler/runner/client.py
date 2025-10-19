@@ -160,7 +160,7 @@ class RunnerClient:
 
         post_process_command = _mrun.Command(
             program=self._paths.python_exe,
-            args=["process.pytrnsys"],
+            args=["process.pytrnsys", "results"],
             working_dir=_pl.PureWindowsPath("systems-main") / "PTES",
         )
 
