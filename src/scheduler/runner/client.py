@@ -151,29 +151,76 @@ class RunnerClient:
             / f"{relative_deck_file_containing_dir_path.name}.log"
         )
 
-        command = _mrun.Command(
+        simulate_command = _mrun.Command(
             program=self._paths.trnexe_exe,
             args=[deck_file_name, "/N"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,
         )
 
+        post_process_command = _mrun.Command(
+            program=self._paths.python_exe,
+            args=["process.pytrnsys"],
+            working_dir=_pl.PureWindowsPath("systems-main") / "PTES",
+        )
+
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
             container="resultes-results", path=f"results/{variation.id}.zip"
         )
-        result = _mrun.MultipleFilesResult(
+
+        all_files_result = _mrun.MultipleFilesResult(
             glob_patterns=["**"],
             object_storage_output_file_path=object_storage_output_path,
         )
 
+        plot_results = self._create_plot_results(variation)
+
         runner_job = _mrun.RunnerJob(
             id=variation.id,
             object_storage_input_path=object_storage_input_path,
-            commands=[command],
-            results=[result],
+            commands=[simulate_command, post_process_command],
+            results=[all_files_result, *plot_results],
         )
 
         await self._run_job_on_client(runner_job)
+
+    @staticmethod
+    def _create_plot_results(
+        variation: _pvar.Variation,
+    ) -> _cabc.Sequence[_mrun.SingleFileResult]:
+        plot_result_paths = map(
+            _pl.PureWindowsPath,
+            [
+                r"balance\balance-monthly-A4.png",
+                r"boiler\boiler-hourly-A4.png",
+                r"hp\balance-monthly-A4.png",
+                r"hp\q_t-A4.png",
+                r"hx\efficiency-hourly-A4.png",
+                r"hx\LMTD-hourly-A4.png",
+                r"ptes\balance-monthly-A4.png",
+                r"ptes\soc-hourly-A4.png",
+                r"ptes\t-ptes-hourly-A4.png",
+                r"sink\sink-hourly-A4.png",
+                r"solar\q_t-A4.png",
+                r"solar\solar-hourly-A4.png",
+                r"solar\solar-monthly-A4.png",
+                r"source\source-hourly-A4.png",
+            ],
+        )
+
+        variation_dir_path = variation.relative_deck_file_containing_dir_path
+        plot_results = [
+            _mrun.SingleFileResult(
+                file_path=variation_dir_path / p,
+                object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
+                    container="resultes-results",
+                    path=f"results/{variation.id}/{p.as_posix()}",
+                ),
+            )
+            for p in plot_result_paths
+        ]
+
+        return plot_results
 
     async def _run_job_on_client(self, runner_job: _mrun.RunnerJob) -> _tps.Json:
         params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
