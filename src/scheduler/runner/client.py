@@ -112,7 +112,7 @@ class RunnerClient:
             container="resultes-results", path=f"results/{simulation.id}.zip"
         )
         result = _mrun.MultipleFilesResult(
-            glob_patterns=["**"],
+            glob_patterns=_mrun.GlobPatterns(include=["**"]),
             object_storage_output_file_path=object_storage_output_path,
         )
 
@@ -169,7 +169,7 @@ class RunnerClient:
         )
 
         all_files_result = _mrun.MultipleFilesResult(
-            glob_patterns=["**"],
+            glob_patterns=_mrun.GlobPatterns(include=["**"], exclude=["**/*.lst"]),
             object_storage_output_file_path=object_storage_output_path,
         )
 
