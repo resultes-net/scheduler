@@ -159,7 +159,7 @@ class RunnerClient:
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
-            container="resultes-results", path=f"{variation.id}.zip"
+            container="resultes-results", path=f"results/{variation.id}.zip"
         )
         result = _mrun.MultipleFilesResult(
             glob_patterns=["**"],
