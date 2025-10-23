@@ -87,13 +87,15 @@ class RunnerClient:
         self,
         simulation: _psim.Simulation,
     ) -> _cabc.Sequence[str]:
-        match simulation.parameters:
+        parameters = simulation.parameters.values
+
+        match parameters:
             case _pttes.TtesParameters():
                 system_name = "TTES"
             case _pptes.PtesParameters():
                 system_name = "PTES"
             case _:
-                _tp.assert_never(simulation.parameters)
+                _tp.assert_never(parameters)
 
         runner_job = self._create_create_variations_runner_job(simulation, system_name)
 
