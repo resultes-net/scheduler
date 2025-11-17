@@ -99,13 +99,27 @@ class RunnerClient:
 
         system_name = self._get_system_name(parameters)
 
-        working_dir_path = _pl.PureWindowsPath("systems-main") / system_name
+        commands = list[_mrun.Command]()
 
-        command = _mrun.Command(
+        if system_name == "PTES":
+            create_parameters_ddck_file_command = _mrun.Command(
+                program=self._paths.python_exe,
+                args=[
+                    r"systems-main\PTES\create_parameters_ddck_file.py",
+                    "parameters.json",
+                ],
+                working_dir=_pl.PureWindowsPath("."),
+            )
+
+            commands.append(create_parameters_ddck_file_command)
+
+        create_variations_command = _mrun.Command(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
-            working_dir=working_dir_path,
+            working_dir=_pl.PureWindowsPath("systems-main") / system_name,
         )
+
+        commands.append(create_variations_command)
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
             container="resultes-results", path=f"results/{simulation.id}.zip"
@@ -115,7 +129,7 @@ class RunnerClient:
             object_storage_output_file_path=object_storage_output_path,
         )
 
-        serialized_parameters = parameters.values.model_dump()
+        serialized_parameters = parameters.model_dump()
 
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
@@ -124,7 +138,7 @@ class RunnerClient:
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
             ),
-            commands=[command],
+            commands=commands,
             results=[result],
             return_paths_glob_pattern=f"systems-main/{system_name}/results/*/",
         )
