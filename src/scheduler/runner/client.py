@@ -10,6 +10,7 @@ import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.jsonrpc.types as _tps
 import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
+import resultes_pydantic_models.simulations.parameters as _params
 import resultes_pydantic_models.simulations.parameters.ptes as _pptes
 import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 import resultes_pydantic_models.simulations.simulation as _psim
@@ -87,27 +88,23 @@ class RunnerClient:
         self,
         simulation: _psim.Simulation,
     ) -> _cabc.Sequence[str]:
-        parameters = simulation.parameters.values
-
-        match parameters:
-            case _pttes.TtesParameters():
-                system_name = "TTES"
-            case _pptes.PtesParameters():
-                system_name = "PTES"
-            case _:
-                _tp.assert_never(parameters)
-
-        runner_job = self._create_create_variations_runner_job(simulation, system_name)
+        runner_job = self._create_create_variations_runner_job(simulation)
 
         return await self._run_job_on_client(runner_job)
 
     def _create_create_variations_runner_job(
-        self, simulation: _psim.Simulation, system_name: _tp.Literal["TTES", "PTES"]
+        self, simulation: _psim.Simulation
     ) -> _mrun.RunnerJob:
+        parameters = simulation.parameters
+
+        system_name = self._get_system_name(parameters)
+
+        working_dir_path = _pl.PureWindowsPath("systems-main") / system_name
+
         command = _mrun.Command(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
-            working_dir=_pl.PureWindowsPath("systems-main") / system_name,
+            working_dir=working_dir_path,
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
@@ -118,8 +115,11 @@ class RunnerClient:
             object_storage_output_file_path=object_storage_output_path,
         )
 
+        serialized_parameters = parameters.values.model_dump()
+
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
+            parameters=serialized_parameters,
             object_storage_input_path=_mrun.ObjectStorageInputZipFilePath(
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",
@@ -130,6 +130,18 @@ class RunnerClient:
         )
 
         return runner_job
+
+    @staticmethod
+    def _get_system_name(parameters: _params.Parameters) -> str:
+        values = parameters.values
+
+        match values:
+            case _pttes.TtesParameters():
+                return "TTES"
+            case _pptes.PtesParameters():
+                return "PTES"
+            case _:
+                _tp.assert_never(values)
 
     async def simulate_and_post_process_variation(
         self,
