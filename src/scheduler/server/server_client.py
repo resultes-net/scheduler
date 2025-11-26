@@ -46,6 +46,18 @@ class ServerClient:
             response_json = await response.json()
             return _pvar.Variation(**response_json)
 
+    async def get_variations(
+        self,
+        simulation_id: str,
+    ) -> _cabc.Sequence[_pvar.Variation]:
+        async with self._session.get(
+            f"simulations/{simulation_id}/variations",
+        ) as response:
+            response.raise_for_status()
+            response_json = await response.json()
+            variations = [_pvar.Variation(**v) for v in response_json]
+            return variations
+
     async def set_variation_state(
         self, variation_id: str, new_state: _pvar.VariationState
     ) -> None:

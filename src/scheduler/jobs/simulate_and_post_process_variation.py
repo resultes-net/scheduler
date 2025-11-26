@@ -2,6 +2,7 @@ import datetime as _dt
 import logging as _log
 import typing as _tp
 
+import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
 import scheduler.runnable_job_base as _jb
@@ -55,3 +56,19 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.DONE
         )
+
+        await self._maybe_update_simulation_state()
+
+    async def _maybe_update_simulation_state(self):
+        variations = await self._server_client.get_variations(
+            self._variation.simulation_id
+        )
+
+        all_variations_done = all(
+            v.state == _pvar.VariationState.DONE for v in variations
+        )
+
+        if all_variations_done:
+            await self._server_client.set_simulation_state(
+                self._variation.simulation_id, _psim.SimulationState.DONE
+            )
