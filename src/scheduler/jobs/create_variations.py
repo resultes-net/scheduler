@@ -4,6 +4,7 @@ import typing as _tp
 
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
+import resultes_pydantic_models.runner as _prun
 
 import scheduler.runner.client as _rc
 import scheduler.server.server_client as _sc
@@ -30,9 +31,15 @@ class CreateVariationsJob(_sj.SimulationJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        relative_deck_file_paths = await runner_client.create_variations(
-            self._simulation
-        )
+        payload = None
+
+        async for payload in runner_client.create_variations(self._simulation):
+            pass
+
+        if not payload or not isinstance(payload, _prun.JobSuccess):
+            raise RuntimeError("Did not received job success notification.", payload)
+
+        relative_deck_file_paths = payload.result
 
         if relative_deck_file_paths:
             for relative_deck_file_path in relative_deck_file_paths:

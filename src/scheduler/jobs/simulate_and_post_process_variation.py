@@ -4,6 +4,7 @@ import typing as _tp
 
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
+import resultes_pydantic_models.runner as _prun
 
 import scheduler.runnable_job_base as _jb
 import scheduler.runner.client as _rc
@@ -51,15 +52,39 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        await runner_client.simulate_and_post_process_variation(self._variation)
+        async for payload in runner_client.simulate_and_post_process_variation(
+            self._variation
+        ):
+            match payload:
+                case _prun.LogMessage() as log_message:
+                    _LOGGER.log(log_message.level, log_message.message)
+                case _prun.JobProgress(progress=progress):
+                    await self._update_progress(progress)
+                case _prun.JobSuccess():
+                    await self._update_state()
 
+    async def _update_progress(self, progress: int) -> None:
+        await self._server_client.set_variation_progress(self._variation.id, progress)
+
+        variations = await self._server_client.get_variations(
+            self._variation.simulation_id
+        )
+
+        # This only works if variations take equally long, but I can't think of a better
+        # way for now.
+        simulation_progress = round(
+            sum(v.progress for v in variations) / len(variations)
+        )
+
+        await self._server_client.set_simulation_progress(
+            self._variation.simulation_id, simulation_progress
+        )
+
+    async def _update_state(self):
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.DONE
         )
 
-        await self._maybe_update_simulation_state()
-
-    async def _maybe_update_simulation_state(self):
         variations = await self._server_client.get_variations(
             self._variation.simulation_id
         )

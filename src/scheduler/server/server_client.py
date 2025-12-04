@@ -1,5 +1,6 @@
 import collections.abc as _cabc
 import enum as _enum
+import typing as _tp
 
 import aiohttp as _ahttp
 import resultes_pydantic_models.server as _psrv
@@ -35,6 +36,11 @@ class ServerClient:
     ) -> None:
         await self._set_state("simulations", simulation_id, new_state)
 
+    async def set_simulation_progress(
+        self, simulation_id: str, new_progress: int
+    ) -> None:
+        await self._set_progress("variations", simulation_id, new_progress)
+
     async def create_variation(
         self, simulation_id: str, variation: _pvar.CreateVariation
     ) -> _pvar.Variation:
@@ -63,10 +69,28 @@ class ServerClient:
     ) -> None:
         await self._set_state("variations", variation_id, new_state)
 
+    async def set_variation_progress(
+        self, variation_id: str, new_progress: int
+    ) -> None:
+        await self._set_progress("variations", variation_id, new_progress)
+
     async def _set_state(self, collection: str, id: str, new_state: _enum.Enum) -> None:
         params = {"new_state": new_state.value}
         async with self._session.put(
             f"{collection}/{id}/state", params=params
+        ) as response:
+            response.raise_for_status()
+            _ = await response.json()
+
+    async def _set_progress(
+        self,
+        collection: _tp.Literal["simulations", "variations"],
+        id: str,
+        new_progress: int,
+    ) -> None:
+        params = {"new_progress": new_progress}
+        async with self._session.put(
+            f"{collection}/{id}/progress", params=params
         ) as response:
             response.raise_for_status()
             _ = await response.json()

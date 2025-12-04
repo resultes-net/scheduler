@@ -7,7 +7,6 @@ import aiohttp as _ahttp
 import resultes_jsonrpc.jsonrpc.client as _rjjc
 import resultes_jsonrpc.jsonrpc.server as _rjjs
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
-import resultes_jsonrpc.jsonrpc.types as _tps
 import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
 import resultes_pydantic_models.simulations.parameters as _params
@@ -38,9 +37,11 @@ class RunnerClient:
         )
 
         dispatcher = _rjjs.SyncDispatcher()
-        context = _jrpcm.Context(ip_address)
+
+        self._context = _jrpcm.Context(ip_address)
+
         self._jsonrpc_server = _rjjs.JsonRpcServer(
-            logging_websocket, dispatcher, context
+            logging_websocket, dispatcher, self._context
         )
         self._logging_websocket_client = _rjwc.WebsocketClient(
             logging_websocket, self._jsonrpc_server
@@ -87,10 +88,11 @@ class RunnerClient:
     async def create_variations(
         self,
         simulation: _psim.Simulation,
-    ) -> _cabc.Sequence[str]:
+    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
         runner_job = self._create_create_variations_runner_job(simulation)
 
-        return await self._run_job_on_client(runner_job)
+        async for notification in self._run_job_on_client(runner_job):
+            yield notification
 
     def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation
@@ -160,7 +162,18 @@ class RunnerClient:
     async def simulate_and_post_process_variation(
         self,
         variation: _pvar.Variation,
-    ) -> None:
+    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
+        runner_job = self._create_simulate_and_post_process_variation_runner_job(
+            variation
+        )
+
+        async for notification in self._run_job_on_client(runner_job):
+            yield notification
+
+    def _create_simulate_and_post_process_variation_runner_job(
+        self,
+        variation: _pvar.Variation,
+    ) -> _mrun.RunnerJob:
         object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
 
         object_storage_input_path = _mrun.ObjectStorageInputZipFilePath(
@@ -210,7 +223,7 @@ class RunnerClient:
             results=[all_files_result, *plot_results],
         )
 
-        await self._run_job_on_client(runner_job)
+        return runner_job
 
     @staticmethod
     def _create_plot_results(
@@ -250,9 +263,19 @@ class RunnerClient:
 
         return plot_results
 
-    async def _run_job_on_client(self, runner_job: _mrun.RunnerJob) -> _tps.Json:
-        params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
+    async def _run_job_on_client(
+        self, runner_job: _mrun.RunnerJob
+    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
+        with self._context.add_job(runner_job.id):
+            params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
 
-        return await self._jsonrpc_client.send_request_and_check_and_get_response(
-            "run_job", params
-        )
+            await self._jsonrpc_client.send_notification("run_job", params)
+
+            async for notification in self._context.read_notifications(runner_job.id):
+                payload = notification.payload
+
+                match payload:
+                    case _mrun.JobError(message=message):
+                        raise RuntimeError(message)
+                    case _:
+                        yield payload
