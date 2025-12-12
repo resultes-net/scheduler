@@ -90,10 +90,10 @@ class RunnerClient:
 
         system_name = self._get_system_name(parameters)
 
-        commands = list[_mrun.Command]()
+        commands = list[_mrun.GeneralCommand]()
 
         if system_name == "PTES":
-            create_parameters_ddck_file_command = _mrun.Command(
+            create_parameters_ddck_file_command = _mrun.GeneralCommand(
                 program=self._paths.python_exe,
                 args=[
                     r"systems-main\PTES\create_parameters_ddck_file.py",
@@ -104,7 +104,7 @@ class RunnerClient:
 
             commands.append(create_parameters_ddck_file_command)
 
-        create_variations_command = _mrun.Command(
+        create_variations_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
             working_dir=_pl.PureWindowsPath("systems-main") / system_name,
@@ -181,14 +181,14 @@ class RunnerClient:
             / f"{relative_deck_file_containing_dir_path.name}.log"
         )
 
-        simulate_command = _mrun.Command(
+        simulate_command = _mrun.GeneralCommand(
             program=self._paths.trnexe_exe,
             args=[deck_file_name, "/N"],
             working_dir=relative_deck_file_containing_dir_path,
             relative_log_file_path=relative_log_file_path,
         )
 
-        post_process_command = _mrun.Command(
+        post_process_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["process.pytrnsys", "results"],
             working_dir=_pl.PureWindowsPath("systems-main") / "PTES",
