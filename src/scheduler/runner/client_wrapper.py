@@ -8,13 +8,11 @@ class RunnerClientWrapper:
     def __init__(
         self,
         session: _ahttp.ClientSession,
-        requests_websocket: _ahttp.ClientWebSocketResponse,
-        logging_websocket: _ahttp.ClientWebSocketResponse,
+        websocket: _ahttp.ClientWebSocketResponse,
         runner_client: _rc.RunnerClient,
     ) -> None:
         self._session = session
-        self._requests_websocket = requests_websocket
-        self._logging_websocket = logging_websocket
+        self._websocket = websocket
         self._client: _rc.RunnerClient | None = runner_client
 
     @staticmethod
@@ -26,28 +24,20 @@ class RunnerClientWrapper:
 
         session = _ahttp.ClientSession(base_uri)
 
-        requests_websocket = None
-        logging_websocket = None
         try:
-            requests_websocket = await session.ws_connect("/requests")
-            logging_websocket = await session.ws_connect("/logging")
+            requests_websocket = await session.ws_connect("/jsonrpc")
         except:
-            if requests_websocket:
-                await requests_websocket.close()
             await session.close()
             raise
 
         client = _rc.RunnerClient(
             requests_websocket,
-            logging_websocket,
             ip_address,
             paths,
         )
         client.start()
 
-        return RunnerClientWrapper(
-            session, requests_websocket, logging_websocket, client
-        )
+        return RunnerClientWrapper(session, requests_websocket, client)
 
     @property
     def client(self) -> _rc.RunnerClient:
@@ -57,8 +47,7 @@ class RunnerClientWrapper:
         return self._client
 
     async def shut_down(self) -> None:
-        await self._requests_websocket.close()
-        await self._logging_websocket.close()
+        await self._websocket.close()
 
         await self.client.join()
         self._client = None

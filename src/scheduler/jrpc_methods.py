@@ -2,13 +2,9 @@ import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
 import logging as _log
-import traceback as _tb
 
 import jsonrpcserver as _jrpcs
-import jsonrpcserver.codes as _jrpcsc
-import pydantic as _pyd
-import resultes_jsonrpc.jsonrpc.server as _rjjs
-import resultes_jsonrpc.jsonrpc.types as _rjjt
+import resultes_jsonrpc.jsonrpc.connection as _rjjc
 import resultes_pydantic_models.runner as _rpmr
 
 _LOGGER = _log.getLogger(__name__)
@@ -27,9 +23,11 @@ class Context:
 
     @_ctx.contextmanager
     def add_job(self, job_id: str) -> _cabc.Iterator[None]:
+        _LOGGER.info("Adding notification queue for job %s.", job_id)
         self._notification_queues[job_id] = _asyncio.Queue[_rpmr.JobNotification]()
         yield
         del self._notification_queues[job_id]
+        _LOGGER.info("Notification queue for job %s removed.", job_id)
 
     async def read_notifications(
         self, job_id: str
@@ -38,21 +36,30 @@ class Context:
 
         self._notification_queues[job_id] = queue
 
-        try:
-            while notification := await queue.get():
-                yield notification
+        _LOGGER.info("Start waiting for notifications for job %s.", job_id)
 
-                payload = notification.payload
+        while notification := await queue.get():
+            _LOGGER.debug("Job %s got notification %s.", job_id, notification)
 
-                match payload:
-                    case _rpmr.JobError() | _rpmr.JobSuccess():
-                        return
-                    case _:
-                        pass
-        finally:
-            del self._notification_queues[job_id]
+            yield notification
+
+            payload = notification.payload
+
+            match payload:
+                case _rpmr.JobError() | _rpmr.JobSuccess():
+                    break
+                case _:
+                    pass
+
+        _LOGGER.info("Stop waiting for notifications for job %s.", job_id)
 
     async def send_notification(self, job_notification: _rpmr.JobNotification) -> None:
+        _LOGGER.debug(
+            "Sending notification for job %s: %s.",
+            job_notification.job_id,
+            job_notification,
+        )
+
         job_id = job_notification.job_id
 
         queue = self._get_queue(job_id)
@@ -71,49 +78,8 @@ class Context:
         return queue
 
 
-def cancellable_async_validated_jrpcs_method[T: _pyd.BaseModel, C](
-    clazz: type[T],
-) -> _cabc.Callable[
-    [_rjjs.AsyncJsonRpcMethod[[C, T]]], _rjjs.AsyncJsonRpcMethod[[C, _rjjt.JsonObject]]
-]:
-    def create_validating_method(
-        validated_method: _rjjs.AsyncJsonRpcMethod[[C, T]],
-    ) -> _rjjs.AsyncJsonRpcMethod[[C, _rjjt.JsonObject]]:
-        @_jrpcs.method()
-        @_ft.wraps(validated_method)
-        async def validating_method(
-            data: _rjjt.JsonObject, context: C
-        ) -> _jrpcs.Result:
-            try:
-                instance = clazz(**data)
-            except _pyd.ValidationError as validation_error:
-                errors = validation_error.errors()
-                return _jrpcs.InvalidParams(errors)
-
-            try:
-                return await validated_method(context, instance)
-            except _asyncio.CancelledError:
-                _LOGGER.warning("The request was cancelled on the server.")
-                return _jrpcs.Error(
-                    _jrpcsc.ERROR_SERVER_ERROR,
-                    "The request was cancelled on the server.",
-                )
-            except Exception as exception:
-                _LOGGER.error("Exception occurred: %s", exc_info=exception)
-                traceback = "\n".join(_tb.format_exception(exception))
-                return _jrpcs.Error(
-                    _jrpcsc.ERROR_SERVER_ERROR, str(exception), traceback
-                )
-
-        return validating_method
-
-    return create_validating_method
-
-
-@cancellable_async_validated_jrpcs_method(_rpmr.LogMessage)
-async def post_log_message(
-    context: Context, log_message: _rpmr.LogMessage
-) -> _jrpcs.Result:
+@_rjjc.cancellable_async_validated_jrpcs_method(_rpmr.LogMessage)
+async def post_log_message(context: Context, value: _rpmr.LogMessage) -> _jrpcs.Result:
     extra = {"remote_ip": context.ip_address}
 
     # Make sure we see any message coming in from the runner (which messages the runner sends
@@ -122,17 +88,19 @@ async def post_log_message(
     # to better convey the urgency.
     root_logger = _log.getLogger()
     root_logger_level = root_logger.getEffectiveLevel()
-    log_message.level = max(log_message.level, root_logger_level)
+    value.level = max(value.level, root_logger_level)
 
-    _LOGGER.log(log_message.level, "%s", log_message.message, extra=extra)
+    _LOGGER.log(value.level, "%s", value.message, extra=extra)
 
     return _jrpcs.Success()
 
 
-@cancellable_async_validated_jrpcs_method(_rpmr.JobNotification)
+@_rjjc.cancellable_async_validated_jrpcs_method(_rpmr.JobNotification)
 async def job_notification(
-    context: Context, job_notification: _rpmr.JobNotification
+    context: Context, value: _rpmr.JobNotification
 ) -> _jrpcs.Result:
-    await context.send_notification(job_notification)
+    _LOGGER.info("Got notification %s.", job_notification)
+
+    await context.send_notification(value)
 
     return _jrpcs.Success()

@@ -4,8 +4,7 @@ import pathlib as _pl
 import typing as _tp
 
 import aiohttp as _ahttp
-import resultes_jsonrpc.jsonrpc.client as _rjjc
-import resultes_jsonrpc.jsonrpc.server as _rjjs
+import resultes_jsonrpc.jsonrpc.connection as _rjjc
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
@@ -26,26 +25,18 @@ _LOGGER = _log.getLogger(__name__)
 class RunnerClient:
     def __init__(
         self,
-        requests_websocket: _ahttp.ClientWebSocketResponse,
-        logging_websocket: _ahttp.ClientWebSocketResponse,
+        websocket: _ahttp.ClientWebSocketResponse,
         ip_address: str,
         paths: _rp.Paths,
     ) -> None:
-        self._jsonrpc_client = _rjjc.JsonRpcClient(requests_websocket)
-        self._requests_websocket_client = _rjwc.WebsocketClient(
-            requests_websocket, self._jsonrpc_client
-        )
-
-        dispatcher = _rjjs.SyncDispatcher()
-
         self._context = _jrpcm.Context(ip_address)
+        dispatcher = _rjjc.AsyncDispatcher()
 
-        self._jsonrpc_server = _rjjs.JsonRpcServer(
-            logging_websocket, dispatcher, self._context
+        self._jsonrpc_connection = _rjjc.Connection(
+            dispatcher, self._context, websocket
         )
-        self._logging_websocket_client = _rjwc.WebsocketClient(
-            logging_websocket, self._jsonrpc_server
-        )
+
+        self._websocket_client = _rjwc.Client(websocket, self._jsonrpc_connection)
 
         self._paths = paths
 
@@ -59,8 +50,7 @@ class RunnerClient:
 
         _LOGGER.info("Starting.")
 
-        self._requests_websocket_client.start()
-        self._logging_websocket_client.start()
+        self._websocket_client.start()
 
     async def join(self) -> None:
         if not self._started:
@@ -68,8 +58,7 @@ class RunnerClient:
 
         _LOGGER.info("Joining.")
 
-        await self._requests_websocket_client.join()
-        await self._logging_websocket_client.join()
+        await self._websocket_client.join()
 
     async def set_options(
         self,
@@ -79,9 +68,9 @@ class RunnerClient:
         runner_options = _mrun.RunnerOptions(
             log_level=log_level, shall_remove_completed_jobs=shall_remove_completed_jobs
         )
-        params: _rjrpct.JsonStructured = {"runner_options": runner_options.model_dump()}
+        params: _rjrpct.JsonStructured = {"value": runner_options.model_dump()}
 
-        await self._jsonrpc_client.send_request_and_check_and_get_response(
+        await self._jsonrpc_connection.send_request_and_check_and_get_response(
             "set_options", params
         )
 
@@ -267,9 +256,11 @@ class RunnerClient:
         self, runner_job: _mrun.RunnerJob
     ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
         with self._context.add_job(runner_job.id):
-            params: _rjrpct.JsonStructured = {"runner_job": runner_job.model_dump()}
+            argument = _rjjc.Argument("value", runner_job)
 
-            await self._jsonrpc_client.send_notification("run_job", params)
+            await self._jsonrpc_connection.send_notification_base_model(
+                "run_job", argument
+            )
 
             async for notification in self._context.read_notifications(runner_job.id):
                 payload = notification.payload
