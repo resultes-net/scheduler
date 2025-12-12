@@ -256,10 +256,8 @@ class RunnerClient:
         self, runner_job: _mrun.RunnerJob
     ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
         with self._context.add_job(runner_job.id):
-            argument = _rjjc.Argument("value", runner_job)
-
             await self._jsonrpc_connection.send_notification_base_model(
-                "run_job", argument
+                "run_job", runner_job
             )
 
             async for notification in self._context.read_notifications(runner_job.id):
