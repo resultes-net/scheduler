@@ -64,9 +64,6 @@ class Context:
 
         queue = self._get_queue(job_id)
 
-        if not queue:
-            raise ValueError("Uknown job ID.", job_id)
-
         await queue.put(job_notification)
 
     def _get_queue(self, job_id: str) -> _asyncio.Queue[_rpmr.JobNotification]:
