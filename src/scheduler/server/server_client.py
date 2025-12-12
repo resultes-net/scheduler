@@ -39,7 +39,7 @@ class ServerClient:
     async def set_simulation_progress(
         self, simulation_id: str, new_progress: int
     ) -> None:
-        await self._set_progress("variations", simulation_id, new_progress)
+        await self._set_progress("simulations", simulation_id, new_progress)
 
     async def create_variation(
         self, simulation_id: str, variation: _pvar.CreateVariation
