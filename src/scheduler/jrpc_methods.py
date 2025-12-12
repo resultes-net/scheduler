@@ -99,7 +99,7 @@ async def post_log_message(context: Context, value: _rpmr.LogMessage) -> _jrpcs.
 async def job_notification(
     context: Context, value: _rpmr.JobNotification
 ) -> _jrpcs.Result:
-    _LOGGER.info("Got notification %s.", job_notification)
+    _LOGGER.info("Got notification %s.", value)
 
     await context.send_notification(value)
 
