@@ -52,8 +52,12 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
+        simulation = await self._server_client.get_simulation(self._variation.simulation_id)
+
+        n_total_time_steps = simulation.parameters.values.time.n_steps
+        
         async for payload in runner_client.simulate_and_post_process_variation(
-            self._variation
+            self._variation, n_total_time_steps
         ):
             match payload:
                 case _prun.LogMessage() as log_message:

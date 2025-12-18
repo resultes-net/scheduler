@@ -151,9 +151,10 @@ class RunnerClient:
     async def simulate_and_post_process_variation(
         self,
         variation: _pvar.Variation,
+        n_total_time_steps: int,
     ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
         runner_job = self._create_simulate_and_post_process_variation_runner_job(
-            variation
+            variation, n_total_time_steps
         )
 
         async for notification in self._run_job_on_client(runner_job):
@@ -162,6 +163,7 @@ class RunnerClient:
     def _create_simulate_and_post_process_variation_runner_job(
         self,
         variation: _pvar.Variation,
+        n_total_time_steps: int,
     ) -> _mrun.RunnerJob:
         object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
 
@@ -176,16 +178,19 @@ class RunnerClient:
 
         deck_file_name = f"{relative_deck_file_containing_dir_path.name}.dck"
 
-        relative_log_file_path = (
-            relative_deck_file_containing_dir_path
-            / f"{relative_deck_file_containing_dir_path.name}.log"
+        relative_deck_file_path = (
+            relative_deck_file_containing_dir_path / deck_file_name
         )
 
-        simulate_command = _mrun.GeneralCommand(
-            program=self._paths.trnexe_exe,
-            args=[deck_file_name, "/N"],
-            working_dir=relative_deck_file_containing_dir_path,
-            relative_log_file_path=relative_log_file_path,
+        relative_tempereratures_step_prt_file_path = (
+            relative_deck_file_containing_dir_path / "PTES_T.prt"
+        )
+
+        simulate_command = _mrun.RunTrnsysCommand(
+            trnsys_exe_path=self._paths.trnexe_exe,
+            relative_deck_file_path=relative_deck_file_path,
+            n_total_timesteps=n_total_time_steps,
+            relative_temperatures_step_prt_file_path=relative_tempereratures_step_prt_file_path,
         )
 
         post_process_command = _mrun.GeneralCommand(

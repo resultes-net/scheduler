@@ -23,6 +23,13 @@ class ServerClient:
         simulations = [_psim.Simulation(**s) for s in json]
 
         return simulations
+    
+    async def get_simulation(self, simulation_id: str) -> _psim.Simulation:
+        async with self._session.get(f"simulation/{simulation_id}") as response:
+            response.raise_for_status()
+            json = await response.json()
+
+            return _psim.Simulation(**json)
 
     async def get_waiting_variations(self) -> _psrv.WaitingVariations:
         async with self._session.get("waiting-variations") as response:
