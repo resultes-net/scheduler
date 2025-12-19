@@ -52,10 +52,12 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        simulation = await self._server_client.get_simulation(self._variation.simulation_id)
+        simulation = await self._server_client.get_simulation(
+            self._variation.simulation_id
+        )
 
         n_total_time_steps = simulation.parameters.values.time.n_steps
-        
+
         async for payload in runner_client.simulate_and_post_process_variation(
             self._variation, n_total_time_steps
         ):
@@ -68,6 +70,8 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
                     await self._update_state()
 
     async def _update_progress(self, progress: int) -> None:
+        _LOGGER.info("Variation %s progress: %i.", self._variation.id, progress)
+
         await self._server_client.set_variation_progress(self._variation.id, progress)
 
         variations = await self._server_client.get_variations(
