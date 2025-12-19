@@ -157,8 +157,8 @@ class RunnerClient:
             variation, n_total_time_steps
         )
 
-        async for notification in self._run_job_on_client(runner_job):
-            yield notification
+        async for pyaload in self._run_job_on_client(runner_job):
+            yield pyaload
 
     def _create_simulate_and_post_process_variation_runner_job(
         self,
@@ -258,13 +258,18 @@ class RunnerClient:
         return plot_results
 
     async def _run_job_on_client(
-        self, runner_job: _mrun.RunnerJob
+        self, runner_job: _mrun.RunnerJob, timeout_seconds: float | None = 10.0
     ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
         with self._context.add_job(runner_job.id):
             params = {"value": runner_job.model_dump()}
-            await self._jsonrpc_connection.send_request_and_check_and_get_response(
-                "run_job", params
-            )
+
+            try:
+                await self._jsonrpc_connection.send_request_and_check_and_get_response(
+                    "run_job", params, timeout_seconds
+                )
+            except TimeoutError:
+                _LOGGER.error("Sending run job command timed out.")
+                raise
 
             async for notification in self._context.read_notifications(runner_job.id):
                 payload = notification.payload
