@@ -5,6 +5,7 @@ import pathlib as _pl
 import signal as _sig
 import subprocess as _sp
 
+import debugpy as _debugpy
 import aiohttp as _ahttp
 
 import scheduler.clouds_yaml as _cyaml
@@ -62,9 +63,7 @@ def _delete_stale_ressources(runner_manager: _run.AbstractRunnerManager):
 
 def _run_debugger() -> None:
     _config.log_run_debugger_explanation()
-    import debugpy
-
-    debugpy.listen(5678)
+    _debugpy.listen(5678)
 
 
 def _configure_logging(log_level: str) -> None:
@@ -112,6 +111,8 @@ if __name__ == "__main__":
 
     if _config.run_debugger():
         _run_debugger()
+
+    _debugpy.breakpoint()
 
     server_host = _os.environ.get("SERVER_HOST", "localhost")
     server_port = int(_os.environ.get("SERVER_PORT", "8000"))
