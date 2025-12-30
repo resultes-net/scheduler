@@ -5,7 +5,6 @@ import pathlib as _pl
 import signal as _sig
 import subprocess as _sp
 
-import debugpy as _debugpy
 import aiohttp as _ahttp
 
 import scheduler.clouds_yaml as _cyaml
@@ -15,6 +14,9 @@ import scheduler.runner.manager as _run
 import scheduler.runner.paths as _rp
 import scheduler.server.server_client as _sc
 import scheduler.workflow as _wf
+
+if _config.run_debugger():
+    import debugpy as _debugpy
 
 _LOGGER = _log.getLogger(__name__)
 
@@ -61,9 +63,10 @@ def _delete_stale_ressources(runner_manager: _run.AbstractRunnerManager):
     runner_manager.delete_stale_disk_images()
 
 
-def _run_debugger() -> None:
+def _run_debugger_and_wait_for_client() -> None:
     _config.log_run_debugger_explanation()
     _debugpy.listen(5678)
+    _debugpy.wait_for_client()
 
 
 def _configure_logging(log_level: str) -> None:
@@ -110,7 +113,7 @@ if __name__ == "__main__":
         _LOGGER.info("PYTHON_FROZEN_MODULES = %s.", python_frozen_modules)
 
     if _config.run_debugger():
-        _run_debugger()
+        _run_debugger_and_wait_for_client()
 
     server_host = _os.environ.get("SERVER_HOST", "localhost")
     server_port = int(_os.environ.get("SERVER_PORT", "8000"))
