@@ -37,8 +37,6 @@ async def main(
     polling_period_seconds: int,
     paths: _rp.Paths,
 ) -> None:
-    _debugpy.breakpoint()
-
     _delete_stale_ressources(runner_manager)
 
     try:
@@ -113,8 +111,6 @@ if __name__ == "__main__":
 
     if _config.run_debugger():
         _run_debugger()
-
-    _debugpy.breakpoint()
 
     server_host = _os.environ.get("SERVER_HOST", "localhost")
     server_port = int(_os.environ.get("SERVER_PORT", "8000"))

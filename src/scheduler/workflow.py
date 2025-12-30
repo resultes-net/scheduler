@@ -6,6 +6,8 @@ import itertools as _it
 import logging as _log
 import typing as _tp
 
+import debugpy as _debugpy
+
 import scheduler.runnable_job_base as _jb
 import scheduler.runnable_jobs_factory as _rjf
 import scheduler.runner.client as _rc
@@ -67,6 +69,8 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         try:
             async with _asyncio.TaskGroup() as task_group:
                 while not self._is_shutting_down:
+                    _debugpy.breakpoint()
+
                     runnable_jobs_factory = _rjf.RunnableJobsFactory(
                         self._server_client
                     )
