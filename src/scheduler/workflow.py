@@ -184,7 +184,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         has_latest_runner_been_created_too_long_ago = (
             not latest_runner_created_on
-            or now > latest_runner_created_on + _dt.timedelta(minutes=30)
+            or now > latest_runner_created_on + _dt.timedelta(minutes=45)
         )
 
         if not has_latest_runner_been_created_too_long_ago:
