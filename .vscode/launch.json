@@ -5,6 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         {
+            // For debugging, use kubectl inside WSL to port-forward like so:
+            //      `kubectl port-forward -n scheduler $(kubectl get -n scheduler pod -o name) 5678`
             "name": "Python Debugger: Remote Attach",
             "type": "debugpy",
             "request": "attach",
@@ -14,13 +16,9 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/src",
-                    "remoteRoot": "/app/src",
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/app",
                 },
-                {
-                    "localRoot": "${workspaceFolder}/src/scheduler",
-                    "remoteRoot": "/app/src/scheduler"
-                }
             ],
         }
     ]
