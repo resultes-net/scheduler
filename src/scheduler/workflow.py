@@ -75,6 +75,8 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
                     await self._process_jobs(task_group, runnable_jobs)
 
+                    await self._create_throwaway_runner_if_latest_runner_has_been_created_too_long_ago()
+
                     await self._runner_clients_manager.delete_any_idle_runners()
                     self._runner_manager.delete_stale_disk_images()
 
@@ -162,6 +164,42 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     ) -> _susr.UserJobs:
         n_jobs = self._runner_clients_manager.get_n_jobs(user_id)
         return _susr.UserJobs(n_jobs, runnable_jobs)
+
+    async def _create_throwaway_runner_if_latest_runner_has_been_created_too_long_ago(
+        self,
+    ) -> None:
+        """
+        Using Infomaniak's OpenStack, if we don't create runners for too long a time, starting
+        a runner then takes very long or fails. Therefore, we make sure to start runners periodically
+        (and shut them down immediately again afterwards).
+        """
+        if self._runner_clients_manager.n_runners() > 0:
+            return
+
+        now = _dt.datetime.now()
+
+        latest_runner_created_on = (
+            self._runner_clients_manager.latest_runner_created_on()
+        )
+
+        has_latest_runner_been_created_too_long_ago = (
+            not latest_runner_created_on
+            or now > latest_runner_created_on + _dt.timedelta(minutes=30)
+        )
+
+        if not has_latest_runner_been_created_too_long_ago:
+            return
+
+        created_on_formatted = (
+            str(latest_runner_created_on) if latest_runner_created_on else "(unknown)"
+        )
+
+        _LOGGER.info(
+            "The last time a runner was started was on %s. Creating new runner to avoid long creation times in future.",
+            created_on_formatted,
+        )
+
+        await self._runner_clients_manager.create_new_runner()
 
     @staticmethod
     async def _adjust_wakeup_time_if_needed_and_sleep_until(

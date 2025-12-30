@@ -1,5 +1,6 @@
 import asyncio as _asyncio
 import logging as _log
+import datetime as _dt
 
 import aiohttp as _ahttp
 
@@ -28,8 +29,13 @@ class RunnerClientsManager:
         ]()
         self._runners_scheduler = _srun.RunnersScheduler()
 
+        self._lastest_runner_created_on: _dt.datetime | None = None
+
     def n_runners(self) -> int:
         return len(self._runner_client_wrappers_by_ip_address)
+
+    def latest_runner_created_on(self) -> _dt.datetime | None:
+        return self._lastest_runner_created_on
 
     def get_n_jobs(self, user_id: str) -> int:
         return self._runners_scheduler.get_n_jobs(user_id)
@@ -44,6 +50,8 @@ class RunnerClientsManager:
         )
         _LOGGER.info("...DONE. New runner with IP address %s created.", ip_address)
         runner_client_wrapper = await self._create_client_wrapper(ip_address)
+
+        self._lastest_runner_created_on = _dt.datetime.now()
 
         await self._set_options(runner_client_wrapper.client)
 
