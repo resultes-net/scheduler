@@ -140,7 +140,7 @@ class RunnerClientsManager:
         for idle_runner_ip_address in idle_runner_ip_addresses:
             _LOGGER.info("Deleting server %s.", idle_runner_ip_address)
             self._runners_scheduler.remove_runner(idle_runner_ip_address)
-            wrapper = self._runner_client_wrappers_by_ip_address[idle_runner_ip_address]
+            wrapper = self._runner_client_wrappers_by_ip_address.pop(idle_runner_ip_address)
             await wrapper.shut_down()
             self._runner_manager.delete_servers(idle_runner_ip_address)
 
