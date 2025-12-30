@@ -37,6 +37,8 @@ async def main(
     polling_period_seconds: int,
     paths: _rp.Paths,
 ) -> None:
+    _debugpy.breakpoint()
+
     _delete_stale_ressources(runner_manager)
 
     try:
