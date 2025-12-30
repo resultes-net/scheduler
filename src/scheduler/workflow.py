@@ -199,7 +199,15 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             created_on_formatted,
         )
 
-        await self._runner_clients_manager.create_new_runner()
+        timeout_minutes = 5
+        try:
+            async with _asyncio.timeout(timeout_minutes * 60.0):
+                await self._runner_clients_manager.create_new_runner()
+        except TimeoutError:
+            _LOGGER.warning(
+                "Creating of throw-away runner time out after %i minutes.",
+                timeout_minutes,
+            )
 
     @staticmethod
     async def _adjust_wakeup_time_if_needed_and_sleep_until(

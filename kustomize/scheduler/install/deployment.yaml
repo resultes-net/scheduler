@@ -28,8 +28,6 @@ spec:
               value: internal-server.server.svc.cluster.local
             - name: SERVER_PORT
               value: "8000"
-            - name: RUNNER_HOST
-              value: 172.21.0.115
             - name: RUNNER_PORT
               value: "3000"
             - name: POLLING_PERIOD_SECONDS
