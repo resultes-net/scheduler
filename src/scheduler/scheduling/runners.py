@@ -16,12 +16,32 @@ class _RunningJob:
     started_on: _dt.datetime = _dc.field(default_factory=_rpmc.utc_now, init=False)
 
 
-class _Runner:
+class Runner:
     def __init__(self, ip_address: str, n_max_jobs: int) -> None:
         self.ip_address = ip_address
         self.n_max_jobs = n_max_jobs
         self._assigned_jobs = list[_RunningJob]()
 
+    def get_n_jobs(self, user_id: str | None = None) -> int:
+        relevant_jobs = (
+            self._assigned_jobs
+            if not user_id
+            else [j for j in self._assigned_jobs if j.user_id == user_id]
+        )
+
+        return len(relevant_jobs)
+
+    def have_max_jobs(self) -> bool:
+        return self.get_n_jobs() == self.n_max_jobs
+
+    def is_idle(self) -> bool:
+        return self.get_n_jobs() == 0
+
+    def n_free_jobs(self) -> int:
+        return self.n_max_jobs - self.get_n_jobs()
+
+
+class _Runner(Runner):
     def has_assigned_job(self, job_id: str) -> bool:
         job_ids = [j.id for j in self._assigned_jobs]
         return job_id in job_ids
@@ -44,21 +64,6 @@ class _Runner:
         job = _get_single(j for j in self._assigned_jobs if j.id == job_id)
         self._assigned_jobs.remove(job)
 
-    def get_n_jobs(self, user_id: str | None = None) -> int:
-        relevant_jobs = (
-            self._assigned_jobs
-            if not user_id
-            else [j for j in self._assigned_jobs if j.user_id == user_id]
-        )
-
-        return len(relevant_jobs)
-
-    def have_max_jobs(self) -> bool:
-        return self.get_n_jobs() == self.n_max_jobs
-
-    def is_idle(self) -> bool:
-        return self.get_n_jobs() == 0
-
 
 class RunnersScheduler:
     def __init__(self) -> None:
@@ -73,6 +78,9 @@ class RunnersScheduler:
             return True
 
         return all(r.have_max_jobs() for r in self._runners)
+
+    def get_runners(self) -> _cabc.Collection[Runner]:
+        return list(self._runners)
 
     def add_runner(self, ip_address: str, n_max_jobs: int) -> None:
         runner = _Runner(ip_address, n_max_jobs)
@@ -114,9 +122,6 @@ class RunnersScheduler:
         _LOGGER.error("Cannot remove job %s: it's uknown.", job_id)
 
         raise ValueError("Unknown job.", job_id)
-
-    def get_idle_runner_ip_addresses(self) -> _cabc.Sequence[str]:
-        return [r.ip_address for r in self._runners if r.is_idle()]
 
     def remove_runner(self, ip_address: str) -> None:
         try:

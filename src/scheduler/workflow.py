@@ -67,6 +67,8 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         try:
             async with _asyncio.TaskGroup() as task_group:
                 while not self._is_shutting_down:
+                    await self._ensure_runner_with_free_job_slot_exists_if_any_user_is_logged_in()
+
                     runnable_jobs_factory = _rjf.RunnableJobsFactory(
                         self._server_client
                     )
@@ -77,7 +79,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
                     await self._create_throwaway_runner_if_latest_runner_has_been_created_too_long_ago()
 
-                    await self._runner_clients_manager.delete_any_idle_runners()
+                    await self._remove_any_unneeded_runners()
                     self._runner_manager.delete_stale_disk_images()
 
                     next_wakeup_time = (
@@ -97,6 +99,31 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         except* BaseException as exception:
             _LOGGER.error("Exception occurred: %s. Terminating.", exception)
             raise
+
+    async def _ensure_runner_with_free_job_slot_exists_if_any_user_is_logged_in(
+        self,
+    ) -> None:
+        have_to_create_runner = (
+            await self._is_any_user_logged_in()
+            and self._runner_clients_manager.have_all_runners_max_jobs()
+        )
+
+        if have_to_create_runner:
+            await self._runner_clients_manager.create_new_runner()
+
+    async def _is_any_user_logged_in(self) -> bool:
+        latest_login_on_or_none = await self._server_client.get_latest_login_on()
+        latest_login_on = (
+            latest_login_on_or_none if latest_login_on_or_none else _dt.datetime.min
+        )
+
+        time_passed_since_latest_login = _dt.datetime.now() - latest_login_on
+
+        is_any_user_logged_in = time_passed_since_latest_login < _dt.timedelta(
+            minutes=30
+        )
+
+        return is_any_user_logged_in
 
     async def _process_jobs(
         self,
@@ -208,6 +235,12 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                 "Creating of throw-away runner time out after %i minutes.",
                 timeout_minutes,
             )
+
+    async def _remove_any_unneeded_runners(self) -> None:
+        shall_keep_one_free_job = await self._is_any_user_logged_in()
+        await self._runner_clients_manager.remove_any_uneeded_runners(
+            shall_keep_one_free_job
+        )
 
     @staticmethod
     async def _adjust_wakeup_time_if_needed_and_sleep_until(

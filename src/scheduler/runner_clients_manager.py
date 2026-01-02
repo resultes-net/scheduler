@@ -1,6 +1,7 @@
 import asyncio as _asyncio
 import logging as _log
 import datetime as _dt
+import collections.abc as _cabc
 
 import aiohttp as _ahttp
 
@@ -129,20 +130,58 @@ class RunnerClientsManager:
     def remove_completed_job(self, job_id: str) -> None:
         self._runners_scheduler.remove_completed_job(job_id)
 
-    async def delete_any_idle_runners(self) -> None:
+    async def remove_any_uneeded_runners(self, shall_keep_one_free_job: bool) -> None:
         if _config.keep_runners_alive():
             _config.log_keep_runners_alive_explanation()
             return
 
-        idle_runner_ip_addresses = (
-            self._runners_scheduler.get_idle_runner_ip_addresses()
+        ip_addresses_of_idle_runners_to_remove = (
+            self._get_ip_addresses_of_idle_runners_to_remove(shall_keep_one_free_job)
         )
-        for idle_runner_ip_address in idle_runner_ip_addresses:
-            _LOGGER.info("Deleting server %s.", idle_runner_ip_address)
-            self._runners_scheduler.remove_runner(idle_runner_ip_address)
-            wrapper = self._runner_client_wrappers_by_ip_address.pop(idle_runner_ip_address)
+
+        for (
+            ip_address_of_idle_runner_to_remove
+        ) in ip_addresses_of_idle_runners_to_remove:
+            _LOGGER.info("Removing runner %s.", ip_address_of_idle_runner_to_remove)
+            self._runners_scheduler.remove_runner(ip_address_of_idle_runner_to_remove)
+            wrapper = self._runner_client_wrappers_by_ip_address.pop(
+                ip_address_of_idle_runner_to_remove
+            )
             await wrapper.shut_down()
-            self._runner_manager.delete_servers(idle_runner_ip_address)
+            self._runner_manager.delete_servers(ip_address_of_idle_runner_to_remove)
+
+    def _get_ip_addresses_of_idle_runners_to_remove(
+        self, shall_keep_one_free_job: bool
+    ) -> _cabc.Sequence[str]:
+        runners = self._runners_scheduler.get_runners()
+        idle_runners = [r for r in runners if r.is_idle()]
+
+        if not idle_runners:
+            return []
+
+        n_free_jobs_on_non_idle_runners = sum(
+            r.n_free_jobs() for r in runners if not r.is_idle()
+        )
+
+        shall_keep_one_idle_runner = (
+            shall_keep_one_free_job and n_free_jobs_on_non_idle_runners == 0
+        )
+
+        if shall_keep_one_idle_runner:
+            idle_runner_to_keep = idle_runners[0]
+
+            _LOGGER.info(
+                "Not removing runner with IP %s because we were asked to keep on free job.",
+                idle_runner_to_keep.ip_address,
+            )
+
+        idle_runners_to_remove = (
+            idle_runners[1:] if shall_keep_one_idle_runner else idle_runners
+        )
+
+        ip_addresses = [r.ip_address for r in idle_runners_to_remove]
+
+        return ip_addresses
 
     async def shut_down(self) -> None:
         for (

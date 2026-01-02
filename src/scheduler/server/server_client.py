@@ -3,6 +3,7 @@ import enum as _enum
 import typing as _tp
 
 import aiohttp as _ahttp
+import resultes_pydantic_models.common as _pcom
 import resultes_pydantic_models.server as _psrv
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
@@ -11,6 +12,15 @@ import resultes_pydantic_models.simulations.variation as _pvar
 class ServerClient:
     def __init__(self, session: _ahttp.ClientSession) -> None:
         self._session = session
+
+    async def get_latest_login_on(self) -> _pcom.AwarePastDatetime | None:
+        async with self._session.get("latest-login") as response:
+            response.raise_for_status()
+            json = await response.json()
+
+        latest_login = _psrv.LatestLogin(**json)
+        
+        return latest_login.on
 
     async def get_simulations_waiting_for_variations_creation(
         self,
