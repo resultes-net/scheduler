@@ -111,6 +111,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         )
 
         if have_to_create_runner:
+            _LOGGER.info("Creating new runner to have free jobs for logged in user.")
             await self._runner_clients_manager.create_new_runner()
 
     async def _is_any_user_logged_in(self) -> bool:
