@@ -15,6 +15,8 @@ import scheduler.runner_clients_manager as _rcm
 import scheduler.scheduling.jobs as _susr
 import scheduler.server.server_client as _sc
 
+import resultes_pydantic_models.common as _pcom
+
 _LOGGER = _log.getLogger(__name__)
 
 _MAX_RUNNERS = 2
@@ -117,7 +119,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             latest_login_on_or_none if latest_login_on_or_none else _dt.datetime.min
         )
 
-        time_passed_since_latest_login = _dt.datetime.now() - latest_login_on
+        time_passed_since_latest_login = _pcom.utc_now() - latest_login_on
 
         is_any_user_logged_in = time_passed_since_latest_login < _dt.timedelta(
             minutes=30
