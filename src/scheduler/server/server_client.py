@@ -13,7 +13,7 @@ class ServerClient:
     def __init__(self, session: _ahttp.ClientSession) -> None:
         self._session = session
 
-    async def get_latest_login_on(self) -> _pcom.AwarePastDatetime | None:
+    async def get_latest_login_on(self) -> _pcom.AwarePastDatetime:
         async with self._session.get("latest-login") as response:
             response.raise_for_status()
             json = await response.json()

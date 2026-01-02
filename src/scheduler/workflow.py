@@ -115,10 +115,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             await self._runner_clients_manager.create_new_runner()
 
     async def _is_any_user_logged_in(self) -> bool:
-        latest_login_on_or_none = await self._server_client.get_latest_login_on()
-        latest_login_on = (
-            latest_login_on_or_none if latest_login_on_or_none else _dt.datetime.min
-        )
+        latest_login_on = await self._server_client.get_latest_login_on()
 
         time_passed_since_latest_login = _pcom.utc_now() - latest_login_on
 
