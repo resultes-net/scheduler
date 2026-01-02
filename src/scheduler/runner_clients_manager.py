@@ -171,7 +171,7 @@ class RunnerClientsManager:
             idle_runner_to_keep = idle_runners[0]
 
             _LOGGER.info(
-                "Not removing runner with IP %s because we were asked to keep on free job.",
+                "Not removing runner with IP %s because we were asked to keep one free job.",
                 idle_runner_to_keep.ip_address,
             )
 
