@@ -39,7 +39,7 @@ async def main(
     polling_period_seconds: int,
     paths: _rp.Paths,
 ) -> None:
-    _delete_stale_ressources(runner_manager)
+    _delete_stale_resources(runner_manager)
 
     try:
         async with _ahttp.ClientSession(server_base_uri) as server_session:
@@ -51,10 +51,10 @@ async def main(
             ) as looper:
                 await looper.loop(polling_period_seconds)
     finally:
-        _delete_stale_ressources(runner_manager)
+        _delete_stale_resources(runner_manager)
 
 
-def _delete_stale_ressources(runner_manager: _run.AbstractRunnerManager):
+def _delete_stale_resources(runner_manager: _run.AbstractRunnerManager):
     if _config.keep_runners_alive():
         _config.log_keep_runners_alive_explanation()
     else:
