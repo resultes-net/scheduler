@@ -275,11 +275,12 @@ class DummyRunnerManager(AbstractRunnerManager):
 
     @_tp.override
     def delete_servers(self, ip_address: str | None = None) -> None:
-        if ip_address != self._ip_address:
-            raise ValueError("Unknown IP address.", ip_address)
+        if ip_address:
+            if ip_address != self._ip_address:
+                raise ValueError("Unknown IP address.", ip_address)
 
-        if not self._is_server_running:
-            raise RuntimeError("Server has not been created.")
+            if not self._is_server_running:
+                raise RuntimeError("Server has not been created.")
 
         self._is_server_running = False
 
