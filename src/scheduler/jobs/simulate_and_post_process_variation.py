@@ -46,6 +46,10 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def set_started(self) -> None:
+        await self._server_client.set_simulation_state(
+            self._variation.simulation_id, _psim.SimulationState.RUNNING_VARIATIONS
+        )
+        
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.RUNNING
         )
