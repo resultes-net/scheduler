@@ -131,10 +131,29 @@ class RunnerClientsManager:
         self._runners_scheduler.remove_completed_job(job_id)
 
     async def remove_any_uneeded_runners(self, shall_keep_one_free_job: bool) -> None:
+        self._remove_unknown_runners()
+
         if _config.keep_runners_alive():
             _config.log_keep_runners_alive_explanation()
             return
 
+        await self._remove_any_unneeded_idle_runners(shall_keep_one_free_job)
+
+    def _remove_unknown_runners(self) -> None:
+        all_runner_ip_addresses = set(self._runner_manager.get_server_ip_addresses())
+        known_runner_ip_address = {
+            r.ip_address for r in self._runners_scheduler.get_runners()
+        }
+        unknown_runner_ip_addresses = all_runner_ip_addresses - known_runner_ip_address
+
+        for unknown_runner_ip_address in unknown_runner_ip_addresses:
+            _LOGGER.warning("Removing unknown runner %s.", unknown_runner_ip_address)
+
+            self._runner_manager.delete_servers(unknown_runner_ip_address)
+
+    async def _remove_any_unneeded_idle_runners(
+        self, shall_keep_one_free_job: bool
+    ) -> None:
         ip_addresses_of_idle_runners_to_remove = (
             self._get_ip_addresses_of_idle_runners_to_remove(shall_keep_one_free_job)
         )

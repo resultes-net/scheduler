@@ -26,6 +26,10 @@ class AbstractRunnerManager(_abc.ABC):
         raise NotImplementedError()
 
     @_abc.abstractmethod
+    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
+        raise NotImplementedError()
+
+    @_abc.abstractmethod
     def delete_servers(self, ip_address: str | None = None) -> None:
         raise NotImplementedError()
 
@@ -175,12 +179,23 @@ class RunnerManager(AbstractRunnerManager):
     def n_max_jobs_per_runner(self) -> int:
         return 8
 
+    @_tp.override
     def create_server_and_get_ip(self) -> str:
         with self._create_connection() as connection:
             server_factory = _ServerFactory(connection)
 
             return server_factory.create_server_and_get_ip()
 
+    @_tp.override
+    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
+        with self._create_connection() as connection:
+            servers = list(connection.compute.servers(name="runner"))
+
+        ip_addresses = [_get_ip_address(s) for s in servers]
+
+        return ip_addresses
+
+    @_tp.override
     def delete_servers(self, ip_address: str | None = None) -> None:
         _log.info("Deleting servers...")
 
@@ -206,6 +221,7 @@ class RunnerManager(AbstractRunnerManager):
 
             _log.info("...DONE: %i server(s) deleted.", len(servers))
 
+    @_tp.override
     def delete_stale_disk_images(self) -> None:
         with self._create_connection() as connection:
             disk_images = _DiskImages(connection)
@@ -236,16 +252,39 @@ class DummyRunnerManager(AbstractRunnerManager):
     def __init__(self, ip_address: str, n_max_jobs_per_runner: int) -> None:
         self._ip_address = ip_address
         self._n_max_jobs_per_runner = n_max_jobs_per_runner
+        self._is_server_running = False
 
     @property
     def n_max_jobs_per_runner(self) -> int:
         return self._n_max_jobs_per_runner
 
+    @_tp.override
     def create_server_and_get_ip(self) -> str:
+        if self._is_server_running:
+            raise RuntimeError(
+                "Server is already created (cannot have multiple dummy servers running at the same time)."
+            )
+
+        self._is_server_running = True
+
         return self._ip_address
 
+    @_tp.override
+    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
+        return [self._ip_address]
+
+    @_tp.override
     def delete_servers(self, ip_address: str | None = None) -> None:
+        if ip_address != self._ip_address:
+            raise ValueError("Unknown IP address.", ip_address)
+
+        if not self._is_server_running:
+            raise RuntimeError("Server has not been created.")
+
+        self._is_server_running = False
+
         return
 
+    @_tp.override
     def delete_stale_disk_images(self) -> None:
         return
