@@ -49,7 +49,7 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
         await self._server_client.set_simulation_state(
             self._variation.simulation_id, _psim.SimulationState.RUNNING_VARIATIONS
         )
-        
+
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.RUNNING
         )
@@ -71,7 +71,9 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
                 case _prun.JobProgress(progress=progress):
                     await self._update_progress(progress)
                 case _prun.JobSuccess():
-                    await self._update_state()
+                    await self._update_state_on_success()
+                case _prun.JobError() as job_error:
+                    await self._update_state_on_error(job_error)
 
     async def _update_progress(self, progress: int) -> None:
         _LOGGER.info("Variation %s progress: %i.", self._variation.id, progress)
@@ -92,7 +94,9 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
             self._variation.simulation_id, simulation_progress
         )
 
-    async def _update_state(self):
+    async def _update_state_on_success(self) -> None:
+        _LOGGER.info("%s - Variation done.", self.id)
+
         await self._server_client.set_variation_state(
             self._variation.id, _pvar.VariationState.DONE
         )
@@ -109,3 +113,19 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
             await self._server_client.set_simulation_state(
                 self._variation.simulation_id, _psim.SimulationState.DONE
             )
+
+    async def _update_state_on_error(self, job_error: _prun.JobError) -> None:
+        _LOGGER.error(
+            "%s - Error running job command %i: %s.",
+            self.id,
+            job_error.command_number,
+            job_error.message,
+        )
+
+        await self._server_client.set_variation_state(
+            self._variation.id, _pvar.VariationState.ERROR
+        )
+
+        await self._server_client.set_simulation_state(
+            self._variation.simulation_id, _psim.SimulationState.ERROR
+        )

@@ -77,7 +77,7 @@ class RunnerClient:
     async def create_variations(
         self,
         simulation: _psim.Simulation,
-    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
+    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
         runner_job = self._create_create_variations_runner_job(simulation)
 
         async for notification in self._run_job_on_client(runner_job):
@@ -152,7 +152,7 @@ class RunnerClient:
         self,
         variation: _pvar.Variation,
         n_total_time_steps: int,
-    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
+    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
         runner_job = self._create_simulate_and_post_process_variation_runner_job(
             variation, n_total_time_steps
         )
@@ -259,7 +259,7 @@ class RunnerClient:
 
     async def _run_job_on_client(
         self, runner_job: _mrun.RunnerJob, timeout_seconds: float | None = 10.0
-    ) -> _cabc.AsyncIterable[_mrun.JobSuccessfulPayload]:
+    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
         with self._context.add_job(runner_job.id):
             params = {"value": runner_job.model_dump()}
 
@@ -273,9 +273,4 @@ class RunnerClient:
 
             async for notification in self._context.read_notifications(runner_job.id):
                 payload = notification.payload
-
-                match payload:
-                    case _mrun.JobError(message=message):
-                        raise RuntimeError(message)
-                    case _:
-                        yield payload
+                yield payload

@@ -31,13 +31,21 @@ class CreateVariationsJob(_sj.SimulationJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        payload = None
-
         async for payload in runner_client.create_variations(self._simulation):
-            pass
-
-        if not payload or not isinstance(payload, _prun.JobSuccess):
-            raise RuntimeError("Did not received job success notification.", payload)
+            match payload:
+                case _prun.JobError() as job_error:
+                    _LOGGER.error(
+                        "%s - Error running job command %i: %s.",
+                        self.id,
+                        job_error.command_number,
+                        job_error.message,
+                    )
+                    await self._server_client.set_simulation_state(
+                        self._simulation.id, _psim.SimulationState.ERROR
+                    )
+                    return
+                case _:
+                    pass
 
         relative_deck_file_paths = payload.result
 
