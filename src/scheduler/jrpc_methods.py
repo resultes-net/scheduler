@@ -57,15 +57,7 @@ class Context:
     @staticmethod
     def _log_log_message(log_message: _rpmr.LogMessage) -> None:
         effective_level = max(_LOGGER.getEffectiveLevel(), log_message.level)
-
-        if log_message.command_number is not None:
-            _LOGGER.log(
-                effective_level,
-                f"{log_message.message}",
-                log_message.command_number,
-            )
-        else:
-            _LOGGER.log(effective_level, log_message.message)
+        _LOGGER.log(effective_level, log_message.message)
 
     async def send_notification(self, job_notification: _rpmr.JobNotification) -> None:
         _LOGGER.debug(
