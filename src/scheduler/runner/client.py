@@ -231,7 +231,7 @@ class RunnerClient:
                 r"boiler\boiler-hourly-A4.png",
                 r"hp\balance-monthly-A4.png",
                 r"hp\q_t-A4.png",
-                r"hx\efficiency-hourly-A4.png",
+                r"hx\effectiveness-hourly-A4.png",
                 r"hx\LMTD-hourly-A4.png",
                 r"ptes\balance-monthly-A4.png",
                 r"ptes\soc-hourly-A4.png",
