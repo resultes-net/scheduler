@@ -70,7 +70,7 @@ class Context:
         queue = self._notification_queues.get(job_id)
 
         if not queue:
-            raise ValueError("Uknown job ID.", job_id)
+            raise ValueError("Unknown job ID.", job_id)
 
         return queue
 
