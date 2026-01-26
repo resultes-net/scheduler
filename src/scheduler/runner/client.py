@@ -14,6 +14,7 @@ import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
+import scheduler.job_payload as _jp
 import scheduler.jrpc_methods as _jrpcm
 import scheduler.runner.paths as _rp
 
@@ -77,7 +78,7 @@ class RunnerClient:
     async def create_variations(
         self,
         simulation: _psim.Simulation,
-    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
+    ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         runner_job = self._create_create_variations_runner_job(simulation)
 
         async for notification in self._run_job_on_client(runner_job):
@@ -152,13 +153,13 @@ class RunnerClient:
         self,
         variation: _pvar.Variation,
         n_total_time_steps: int,
-    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
+    ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         runner_job = self._create_simulate_and_post_process_variation_runner_job(
             variation, n_total_time_steps
         )
 
-        async for pyaload in self._run_job_on_client(runner_job):
-            yield pyaload
+        async for payload in self._run_job_on_client(runner_job):
+            yield payload
 
     def _create_simulate_and_post_process_variation_runner_job(
         self,
@@ -259,7 +260,7 @@ class RunnerClient:
 
     async def _run_job_on_client(
         self, runner_job: _mrun.RunnerJob, timeout_seconds: float | None = 10.0
-    ) -> _cabc.AsyncIterable[_mrun.JobPayload]:
+    ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         with self._context.add_job(runner_job.id):
             params = {"value": runner_job.model_dump()}
 
@@ -271,6 +272,5 @@ class RunnerClient:
                 _LOGGER.error("Sending run job command timed out.")
                 raise
 
-            async for notification in self._context.read_notifications(runner_job.id):
-                payload = notification.payload
+            async for payload in self._context.read_payloads(runner_job.id):
                 yield payload

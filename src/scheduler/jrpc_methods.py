@@ -7,6 +7,8 @@ import jsonrpcserver as _jrpcs
 import resultes_jsonrpc.jsonrpc.connection as _rjjc
 import resultes_pydantic_models.runner as _rpmr
 
+import scheduler.job_payload as _jp
+
 _LOGGER = _log.getLogger(__name__)
 
 
@@ -29,9 +31,7 @@ class Context:
         del self._notification_queues[job_id]
         _LOGGER.info("Notification queue for job %s removed.", job_id)
 
-    async def read_notifications(
-        self, job_id: str
-    ) -> _cabc.AsyncIterable[_rpmr.JobNotification]:
+    async def read_payloads(self, job_id: str) -> _cabc.AsyncIterable[_jp.JobPayload]:
         queue = self._get_queue(job_id)
 
         self._notification_queues[job_id] = queue
@@ -41,17 +41,31 @@ class Context:
         while notification := await queue.get():
             _LOGGER.debug("Job %s got notification %s.", job_id, notification)
 
-            yield notification
-
             payload = notification.payload
 
             match payload:
+                case _rpmr.LogMessage() as log_message:
+                    self._log_log_message(log_message)
                 case _rpmr.JobError() | _rpmr.JobSuccess():
+                    yield payload
                     break
                 case _:
                     pass
 
         _LOGGER.info("Stop waiting for notifications for job %s.", job_id)
+
+    @staticmethod
+    def _log_log_message(log_message: _rpmr.LogMessage) -> None:
+        effective_level = max(_LOGGER.getEffectiveLevel(), log_message.level)
+
+        if log_message.command_number is not None:
+            _LOGGER.log(
+                effective_level,
+                f"{log_message.message} (during command %i)",
+                log_message.command_number,
+            )
+        else:
+            _LOGGER.log(effective_level, log_message.message)
 
     async def send_notification(self, job_notification: _rpmr.JobNotification) -> None:
         _LOGGER.debug(

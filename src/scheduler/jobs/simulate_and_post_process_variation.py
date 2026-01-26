@@ -66,8 +66,6 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
             self._variation, n_total_time_steps
         ):
             match payload:
-                case _prun.LogMessage() as log_message:
-                    _LOGGER.log(log_message.level, log_message.message)
                 case _prun.JobProgress(progress=progress):
                     await self._update_progress(progress)
                 case _prun.JobSuccess():
