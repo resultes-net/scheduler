@@ -61,7 +61,7 @@ class Context:
         if log_message.command_number is not None:
             _LOGGER.log(
                 effective_level,
-                f"{log_message.message} (during command %i)",
+                f"{log_message.message}",
                 log_message.command_number,
             )
         else:
@@ -76,7 +76,13 @@ class Context:
 
         job_id = job_notification.job_id
 
-        queue = self._get_queue(job_id)
+        try:
+            queue = self._get_queue(job_id)
+        except ValueError:
+            _LOGGER.error(
+                "Got notification %s for unknown job %s.", job_notification, job_id
+            )
+            raise
 
         await queue.put(job_notification)
 
