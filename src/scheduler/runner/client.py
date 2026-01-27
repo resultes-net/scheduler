@@ -207,6 +207,7 @@ class RunnerClient:
         all_files_result = _mrun.MultipleFilesResult(
             glob_patterns=_mrun.GlobPatterns(include=["**"], exclude=["**/*.lst"]),
             object_storage_output_file_path=object_storage_output_path,
+            on_error=True,
         )
 
         plot_results = self._create_plot_results(variation)
