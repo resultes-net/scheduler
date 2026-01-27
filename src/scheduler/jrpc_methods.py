@@ -5,6 +5,7 @@ import logging as _log
 
 import jsonrpcserver as _jrpcs
 import resultes_jsonrpc.jsonrpc.connection as _rjjc
+import resultes_jsonrpc.jsonrpc.jsonrpc_logging as _jrpcl
 import resultes_pydantic_models.runner as _rpmr
 
 import scheduler.job_payload as _jp
@@ -87,8 +88,10 @@ class Context:
         return queue
 
 
-@_rjjc.cancellable_async_validated_jrpcs_method(_rpmr.LogMessage)
-async def post_log_message(context: Context, value: _rpmr.LogMessage) -> _jrpcs.Result:
+@_rjjc.cancellable_async_validated_jrpcs_method(_jrpcl.FormattedRecord)
+async def post_log_message(
+    context: Context, value: _jrpcl.FormattedRecord
+) -> _jrpcs.Result:
     extra = {"remote_ip": context.ip_address}
 
     # Make sure we see any message coming in from the runner (which messages the runner sends
@@ -97,9 +100,9 @@ async def post_log_message(context: Context, value: _rpmr.LogMessage) -> _jrpcs.
     # to better convey the urgency.
     root_logger = _log.getLogger()
     root_logger_level = root_logger.getEffectiveLevel()
-    value.level = max(value.level, root_logger_level)
+    effective_level = max(value.level, root_logger_level)
 
-    _LOGGER.log(value.level, "%s", value.message, extra=extra)
+    _LOGGER.log(effective_level, "%s", value.message, extra=extra)
 
     return _jrpcs.Success()
 
