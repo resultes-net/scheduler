@@ -97,7 +97,7 @@ class RunnerClient:
             create_parameters_ddck_file_command = _mrun.GeneralCommand(
                 program=self._paths.python_exe,
                 args=[
-                    r"systems-main\PTES\create_parameters_ddck_file.py",
+                    r"PTES\create_parameters_ddck_file.py",
                     "parameters.json",
                 ],
                 working_dir=_pl.PureWindowsPath("."),
@@ -108,7 +108,7 @@ class RunnerClient:
         create_variations_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
-            working_dir=_pl.PureWindowsPath("systems-main") / system_name,
+            working_dir=_pl.PureWindowsPath(system_name),
         )
 
         commands.append(create_variations_command)
@@ -132,7 +132,7 @@ class RunnerClient:
             ),
             commands=commands,
             results=[result],
-            return_paths_glob_pattern=f"systems-main/{system_name}/results/*/",
+            return_paths_glob_pattern=f"{system_name}/results/*/",
         )
 
         return runner_job
@@ -197,7 +197,7 @@ class RunnerClient:
         post_process_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["process.pytrnsys", "results"],
-            working_dir=_pl.PureWindowsPath("systems-main") / "PTES",
+            working_dir=_pl.PureWindowsPath("PTES"),
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
