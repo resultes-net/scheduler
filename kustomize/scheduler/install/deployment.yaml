@@ -24,6 +24,8 @@ spec:
           ports:
             - containerPort: 5678
           env:
+            - name: LOG_LEVEL
+              value: INFO
             - name: SERVER_HOST
               value: internal-server.server.svc.cluster.local
             - name: SERVER_PORT
