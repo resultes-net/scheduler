@@ -210,19 +210,19 @@ class RunnerClient:
             on_error=True,
         )
 
-        plot_results = self._create_plot_results(variation)
+        single_file_results = self._create_single_file_results(variation)
 
         runner_job = _mrun.RunnerJob(
             id=variation.id,
             object_storage_input_path=object_storage_input_path,
             commands=[simulate_command, post_process_command],
-            results=[all_files_result, *plot_results],
+            results=[all_files_result, *single_file_results],
         )
 
         return runner_job
 
     @staticmethod
-    def _create_plot_results(
+    def _create_single_file_results(
         variation: _pvar.Variation,
     ) -> _cabc.Sequence[_mrun.SingleFileResult]:
         plot_result_paths = map(
@@ -257,7 +257,19 @@ class RunnerClient:
             for p in plot_result_paths
         ]
 
-        return plot_results
+        relative_log_file_path = variation_dir_path / f"{variation_dir_path.name}.log"
+
+        log_file_result = _mrun.SingleFileResult(
+            file_path=relative_log_file_path,
+            object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
+                container="resultes-results",
+                path=f"results/{variation.id}/variation.log",
+            ),
+        )
+
+        single_file_results = [log_file_result, *plot_results]
+
+        return single_file_results
 
     async def _run_job_on_client(
         self, runner_job: _mrun.RunnerJob, timeout_seconds: float | None = 10.0
