@@ -265,6 +265,7 @@ class RunnerClient:
                 container="resultes-results",
                 path=f"results/{variation.id}/variation.log",
             ),
+            on_error=True,
         )
 
         single_file_results = [log_file_result, *plot_results]
