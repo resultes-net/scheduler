@@ -2,6 +2,7 @@ import asyncio as _asyncio
 import collections.abc as _cabc
 import contextlib as _ctx
 import logging as _log
+import typing as _tp
 
 import jsonrpcserver as _jrpcs
 import resultes_jsonrpc.jsonrpc.connection as _rjjc
@@ -47,11 +48,13 @@ class Context:
             match payload:
                 case _rpmr.LogMessage() as log_message:
                     self._log_log_message(log_message)
+                case _rpmr.JobProgress():
+                    yield payload
                 case _rpmr.JobError() | _rpmr.JobSuccess():
                     yield payload
                     break
                 case _:
-                    pass
+                    _tp.assert_never(_)
 
         _LOGGER.info("Stop waiting for notifications for job %s.", job_id)
 
