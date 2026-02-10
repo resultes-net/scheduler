@@ -6,6 +6,8 @@ import itertools as _it
 import logging as _log
 import typing as _tp
 
+import resultes_pydantic_models.common as _pcom
+
 import scheduler.runnable_job_base as _jb
 import scheduler.runnable_jobs_factory as _rjf
 import scheduler.runner.client as _rc
@@ -14,8 +16,6 @@ import scheduler.runner.paths as _rp
 import scheduler.runner_clients_manager as _rcm
 import scheduler.scheduling.jobs as _susr
 import scheduler.server.server_client as _sc
-
-import resultes_pydantic_models.common as _pcom
 
 _LOGGER = _log.getLogger(__name__)
 
@@ -119,8 +119,11 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
 
         time_passed_since_latest_login = _pcom.utc_now() - latest_login_on
 
+        # Keep runners for 30 minutes (login timeout) + 5 minute buffer to avoid
+        # shutting down a runner and restarting a new one after the user is asked
+        # to re-login.
         is_any_user_logged_in = time_passed_since_latest_login < _dt.timedelta(
-            minutes=30
+            minutes=30 + 5
         )
 
         return is_any_user_logged_in
