@@ -263,7 +263,7 @@ class RunnerClient:
             file_path=relative_log_file_path,
             object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
                 container="resultes-results",
-                path=f"results/{variation.id}/variation.log",
+                path=f"results/{variation.id}/{relative_log_file_path.name}",
             ),
             on_error=True,
         )
