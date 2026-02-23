@@ -130,8 +130,9 @@ class _ServerFactory:
         while True:
             server = self._connection.compute.find_server(server.id)
 
-            if server.addresses:
-                return _get_ip_address(server)
+            ip_address = _get_ip_address(server)
+            if ip_address:
+                return ip_address
 
             seconds = 5.0
             _time.sleep(seconds)
@@ -191,7 +192,7 @@ class RunnerManager(AbstractRunnerManager):
         with self._create_connection() as connection:
             servers = list(connection.compute.servers(name="runner"))
 
-        ip_addresses = [_get_ip_address(s) for s in servers]
+        ip_addresses = [ip_address for s in servers if (ip_address := _get_ip_address(s))]
 
         return ip_addresses
 
@@ -214,9 +215,14 @@ class RunnerManager(AbstractRunnerManager):
 
             for server in servers:
                 ip_address = _get_ip_address(server)
+                
+                if not ip_address:
+                    continue
+                
                 _LOGGER.info(
                     "Deleting runner %s with IP address %s.", server.id, ip_address
                 )
+                
                 connection.compute.delete_server(server)
 
             _log.info("...DONE: %i server(s) deleted.", len(servers))
@@ -243,7 +249,11 @@ class RunnerManager(AbstractRunnerManager):
         connection.close()
 
 
-def _get_ip_address(server) -> str:
+def _get_ip_address(server) -> str | None:
+    if not server.addresses:
+        _LOGGER.warning("Server %s does not have ip addresses.", server.id)
+        return None
+
     ip_address = server.addresses[_NETWORK_NAME][0]["addr"]
     return ip_address
 
