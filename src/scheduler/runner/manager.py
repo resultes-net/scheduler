@@ -251,7 +251,7 @@ class RunnerManager(AbstractRunnerManager):
 
 def _get_ip_address(server) -> str | None:
     if not server.addresses:
-        _LOGGER.warning("Server %s does not have ip addresses.", server.id)
+        _LOGGER.warning("Server %s does not have IP addresses.", server.id)
         return None
 
     ip_address = server.addresses[_NETWORK_NAME][0]["addr"]
