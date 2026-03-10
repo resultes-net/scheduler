@@ -213,6 +213,12 @@ class RunnerManager(AbstractRunnerManager):
                 )
             )
 
+            if not servers_to_delete:
+                if isinstance(delete_ip_addresses, DeleteAll):
+                    _log.warning("No servers for deletion found.")
+
+                return
+
             _log.info("Deleting servers...")
 
             for server_to_delete in servers_to_delete:

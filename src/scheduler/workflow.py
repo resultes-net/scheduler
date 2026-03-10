@@ -235,7 +235,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
                 await self._runner_clients_manager.create_new_runner()
         except TimeoutError:
             _LOGGER.warning(
-                "Creating of throw-away runner time out after %i minutes.",
+                "Creating of throw-away runner timed out after %i minutes.",
                 timeout_minutes,
             )
 
