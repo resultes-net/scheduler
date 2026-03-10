@@ -202,22 +202,19 @@ class RunnerManager(AbstractRunnerManager):
         delete_ip_addresses: _cabc.Sequence[str] | DeleteAll = DELETE_ALL,
         exclude_ip_addresses: _cabc.Sequence[str] | None = None,
     ) -> None:
-        _log.info("Deleting servers...")
-
         with self._create_connection() as connection:
             kwargs = {"name": "runner"}
 
             all_servers = list[_tp.Any](connection.compute.servers(**kwargs))
-
-            if not all_servers:
-                _log.info("...no servers found.")
-                return
 
             servers_to_delete = list(
                 self._get_servers_to_delete(
                     all_servers, delete_ip_addresses, exclude_ip_addresses
                 )
             )
+
+            _log.info("Deleting servers...")
+
             for server_to_delete in servers_to_delete:
                 connection.compute.delete_server(server_to_delete)
 
