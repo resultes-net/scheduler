@@ -15,6 +15,13 @@ import resultes_openstack_utils.clouds_yaml as _cyaml
 _LOGGER = _log.getLogger(__name__)
 
 
+class DeleteAll:
+    pass
+
+
+DELETE_ALL = DeleteAll()
+
+
 class AbstractRunnerManager(_abc.ABC):
     @property
     @_abc.abstractmethod
@@ -26,11 +33,12 @@ class AbstractRunnerManager(_abc.ABC):
         raise NotImplementedError()
 
     @_abc.abstractmethod
-    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
-        raise NotImplementedError()
-
-    @_abc.abstractmethod
-    def delete_servers(self, ip_address: str | None = None) -> None:
+    def delete_servers(
+        self,
+        *,
+        delete_ip_addresses: _cabc.Sequence[str] | DeleteAll = DELETE_ALL,
+        exclude_ip_addresses: _cabc.Sequence[str] | None = None,
+    ) -> None:
         raise NotImplementedError()
 
     @_abc.abstractmethod
@@ -188,44 +196,53 @@ class RunnerManager(AbstractRunnerManager):
             return server_factory.create_server_and_get_ip()
 
     @_tp.override
-    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
-        with self._create_connection() as connection:
-            servers = list(connection.compute.servers(name="runner"))
-
-        ip_addresses = [ip_address for s in servers if (ip_address := _get_ip_address(s))]
-
-        return ip_addresses
-
-    @_tp.override
-    def delete_servers(self, ip_address: str | None = None) -> None:
+    def delete_servers(
+        self,
+        *,
+        delete_ip_addresses: _cabc.Sequence[str] | DeleteAll = DELETE_ALL,
+        exclude_ip_addresses: _cabc.Sequence[str] | None = None,
+    ) -> None:
         _log.info("Deleting servers...")
 
         with self._create_connection() as connection:
             kwargs = {"name": "runner"}
-            if ip_address:
-                kwargs["ip"] = ip_address
 
-            servers = list(connection.compute.servers(**kwargs))
+            all_servers = list[_tp.Any](connection.compute.servers(**kwargs))
 
-            if not servers:
-                if ip_address:
-                    _log.info("...no servers with IP address %s found.", ip_address)
-                else:
-                    _log.info("...no servers found.")
+            if not all_servers:
+                _log.info("...no servers found.")
+                return
 
-            for server in servers:
-                ip_address = _get_ip_address(server)
-                
-                if not ip_address:
-                    continue
-                
-                _LOGGER.info(
-                    "Deleting runner %s with IP address %s.", server.id, ip_address
+            servers_to_delete = list(
+                self._get_servers_to_delete(
+                    all_servers, delete_ip_addresses, exclude_ip_addresses
                 )
-                
-                connection.compute.delete_server(server)
+            )
+            for server_to_delete in servers_to_delete:
+                connection.compute.delete_server(server_to_delete)
 
-            _log.info("...DONE: %i server(s) deleted.", len(servers))
+            _log.info("...DONE: %i server(s) deleted.", len(servers_to_delete))
+
+    def _get_servers_to_delete(
+        self,
+        all_servers: _cabc.Sequence[_tp.Any],
+        delete_ip_addresses: _cabc.Sequence[str] | DeleteAll,
+        exclude_ip_addresses: _cabc.Sequence[str] | None,
+    ) -> _cabc.Iterable[_tp.Any]:
+        for server in all_servers:
+            ip_address = _get_ip_address(server)
+
+            if not ip_address and not isinstance(delete_ip_addresses, DeleteAll):
+                continue
+
+            if (
+                ip_address
+                and exclude_ip_addresses
+                and ip_address in exclude_ip_addresses
+            ):
+                continue
+
+            yield server
 
     @_tp.override
     def delete_stale_disk_images(self) -> None:
@@ -249,7 +266,7 @@ class RunnerManager(AbstractRunnerManager):
         connection.close()
 
 
-def _get_ip_address(server) -> str | None:
+def _get_ip_address(server: _tp.Any) -> str | None:
     if not server.addresses:
         _LOGGER.warning("Server %s does not have IP addresses.", server.id)
         return None
@@ -280,17 +297,20 @@ class DummyRunnerManager(AbstractRunnerManager):
         return self._ip_address
 
     @_tp.override
-    def get_server_ip_addresses(self) -> _cabc.Sequence[str]:
-        return [self._ip_address]
+    def delete_servers(
+        self,
+        *,
+        delete_ip_addresses: _cabc.Sequence[str] | DeleteAll = DELETE_ALL,
+        exclude_ip_addresses: _cabc.Sequence[str] | None = None,
+    ) -> None:
+        if delete_ip_addresses != list(self._ip_address):
+            raise ValueError(
+                f"IP addresses to delete must contain only the address {self._ip_address}",
+                delete_ip_addresses,
+            )
 
-    @_tp.override
-    def delete_servers(self, ip_address: str | None = None) -> None:
-        if ip_address:
-            if ip_address != self._ip_address:
-                raise ValueError("Unknown IP address.", ip_address)
-
-            if not self._is_server_running:
-                raise RuntimeError("Server has not been created.")
+        if not self._is_server_running:
+            raise RuntimeError("Server has not been created.")
 
         self._is_server_running = False
 

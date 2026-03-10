@@ -1,7 +1,7 @@
 import asyncio as _asyncio
-import logging as _log
-import datetime as _dt
 import collections.abc as _cabc
+import datetime as _dt
+import logging as _log
 
 import aiohttp as _ahttp
 
@@ -140,16 +140,12 @@ class RunnerClientsManager:
         await self._remove_any_unneeded_idle_runners(shall_keep_one_free_job)
 
     def _remove_unknown_runners(self) -> None:
-        all_runner_ip_addresses = set(self._runner_manager.get_server_ip_addresses())
-        known_runner_ip_address = {
+        known_runner_ip_addresses = [
             r.ip_address for r in self._runners_scheduler.get_runners()
-        }
-        unknown_runner_ip_addresses = all_runner_ip_addresses - known_runner_ip_address
-
-        for unknown_runner_ip_address in unknown_runner_ip_addresses:
-            _LOGGER.warning("Removing unknown runner %s.", unknown_runner_ip_address)
-
-            self._runner_manager.delete_servers(unknown_runner_ip_address)
+        ]
+        self._runner_manager.delete_servers(
+            exclude_ip_addresses=known_runner_ip_addresses
+        )
 
     async def _remove_any_unneeded_idle_runners(
         self, shall_keep_one_free_job: bool
@@ -167,7 +163,10 @@ class RunnerClientsManager:
                 ip_address_of_idle_runner_to_remove
             )
             await wrapper.shut_down()
-            self._runner_manager.delete_servers(ip_address_of_idle_runner_to_remove)
+
+        self._runner_manager.delete_servers(
+            delete_ip_addresses=ip_addresses_of_idle_runners_to_remove
+        )
 
     def _get_ip_addresses_of_idle_runners_to_remove(
         self, shall_keep_one_free_job: bool
