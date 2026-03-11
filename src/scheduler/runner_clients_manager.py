@@ -143,8 +143,8 @@ class RunnerClientsManager:
         known_runner_ip_addresses = [
             r.ip_address for r in self._runners_scheduler.get_runners()
         ]
-        self._runner_manager.delete_servers(
-            exclude_ip_addresses=known_runner_ip_addresses
+        self._runner_manager.delete_all_servers_except(
+            except_ip_addresses=known_runner_ip_addresses
         )
 
     async def _remove_any_unneeded_idle_runners(
@@ -163,10 +163,7 @@ class RunnerClientsManager:
                 ip_address_of_idle_runner_to_remove
             )
             await wrapper.shut_down()
-
-        self._runner_manager.delete_servers(
-            delete_ip_addresses=ip_addresses_of_idle_runners_to_remove
-        )
+            self._runner_manager.delete_server(ip_address_of_idle_runner_to_remove)
 
     def _get_ip_addresses_of_idle_runners_to_remove(
         self, shall_keep_one_free_job: bool

@@ -21,4 +21,4 @@ def _create_manager():
 
 def test_delete_servers() -> None:
     runner_manager = _create_manager()
-    runner_manager.delete_servers()
+    runner_manager.delete_all_servers_except(except_ip_addresses=[])

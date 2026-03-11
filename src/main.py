@@ -58,7 +58,7 @@ def _delete_stale_resources(runner_manager: _run.AbstractRunnerManager):
     if _config.keep_runners_alive():
         _config.log_keep_runners_alive_explanation()
     else:
-        runner_manager.delete_servers()
+        runner_manager.delete_all_servers_except(except_ip_addresses=[])
 
     runner_manager.delete_stale_disk_images()
 
