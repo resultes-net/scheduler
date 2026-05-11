@@ -17,6 +17,7 @@ oslo-utils==9.0.0
 packaging==25.0
 pyparsing==3.2.3
 python-keystoneclient==5.6.0
+python-swiftclient==4.10.0
 resultes-jsonrpc @ file:./jsonrpc
 resultes-openstack-utils @ file:./openstack-utils
 resultes-pydantic-models @ file:./pydantic-models
