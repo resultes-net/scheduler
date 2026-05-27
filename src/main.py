@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     server_host = _os.environ.get("SERVER_HOST", "localhost")
     server_port = int(_os.environ.get("SERVER_PORT", "8000"))
-    server_base_uri = f"ws://{server_host}:{server_port}/"
+    server_base_uri = f"http://{server_host}:{server_port}/"
     _LOGGER.info("Server base URI: %s", server_base_uri)
 
     runner_port = int(_os.environ.get("RUNNER_PORT", "3000"))

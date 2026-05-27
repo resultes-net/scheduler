@@ -300,8 +300,7 @@ class DummyRunnerManager(AbstractRunnerManager):
 
     @_tp.override
     def delete_server(self, ip_address: str) -> None:
-        if ip_address != self._ip_address:
-            return
+        assert ip_address == self._ip_address
 
         assert self._is_server_running
 
@@ -312,6 +311,9 @@ class DummyRunnerManager(AbstractRunnerManager):
         self, except_ip_addresses: _cabc.Sequence[str]
     ) -> None:
         if self._ip_address in except_ip_addresses:
+            return
+
+        if not self._is_server_running:
             return
 
         self.delete_server(self._ip_address)
