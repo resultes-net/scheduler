@@ -114,7 +114,7 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     async def _update_state_on_error(self, job_error: _prun.JobError) -> None:
         _LOGGER.error(
-            "%s - Error running job command %i: %s.",
+            "%s - Error running job command %s: %s.",
             self.id,
             job_error.command_number,
             job_error.message,

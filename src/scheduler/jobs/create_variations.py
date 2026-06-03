@@ -35,7 +35,7 @@ class CreateVariationsJob(_sj.SimulationJobBase):
             match payload:
                 case _prun.JobError() as job_error:
                     _LOGGER.error(
-                        "%s - Error running job command %i: %s.",
+                        "%s - Error running job command %s: %s.",
                         self.id,
                         job_error.command_number,
                         job_error.message,
