@@ -72,27 +72,3 @@ class RunnableJobsFactory:
         ]
 
         return simulate_variation_jobs
-
-    async def _create_post_process_simulation_jobs(
-        self,
-    ) -> _cabc.Sequence[_sppvj.SimulateAndPostProcessVariation]:
-        waiting_variations = await self._server_client.get_waiting_variations()
-
-        if waiting_variations.waiting_variations:
-            data = _pprint.pformat(waiting_variations, indent=4)
-
-            _LOGGER.info(
-                "Found the following variations waiting to be simulated: %s\n",
-                data,
-            )
-
-        user_ids = {s.id: s.user_id for s in waiting_variations.associated_simulations}
-
-        simulate_variation_jobs = [
-            _sppvj.SimulateAndPostProcessVariation(
-                v, user_ids[v.simulation_id], self._server_client
-            )
-            for v in waiting_variations.waiting_variations
-        ]
-
-        return simulate_variation_jobs
