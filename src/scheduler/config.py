@@ -40,6 +40,10 @@ def log_runner_log_level_not_info_explanation() -> None:
     _LOGGER.warning("Runner log level not INFO %s.", _BECAUSE)
 
 
+def create_throwaway_runners() -> bool:
+    return _read_bool_value("createThrowawayRunners")
+
+
 def _read_bool_value(file_name: str) -> bool:
     file_path = _MOUNT_DIR_PATH / file_name
 

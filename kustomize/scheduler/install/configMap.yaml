@@ -10,5 +10,7 @@ data:
   # Set to "true" to keep completed jobs around on runner when debugging
   runnerShallRemoveCompletedJobs: "true"
   runnerLogLevel: "INFO"
+  # Set to "false" to stop scheduler from creating throwaway runners to keep instance creation "hot"
+  createThrowawayRunners: "true"
 metadata:
   name: config-cm

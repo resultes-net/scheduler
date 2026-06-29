@@ -8,6 +8,7 @@ import typing as _tp
 
 import resultes_pydantic_models.common as _pcom
 
+import scheduler.config as _cfg
 import scheduler.runnable_job_base as _jb
 import scheduler.runnable_jobs_factory as _rjf
 import scheduler.runner.client as _rc
@@ -203,6 +204,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
         a runner then takes very long or fails. Therefore, we make sure to start runners periodically
         (and shut them down immediately again afterwards).
         """
+        if not _cfg.create_throwaway_runners():
+            return
+
         if self._runner_clients_manager.n_runners() > 0:
             return
 
