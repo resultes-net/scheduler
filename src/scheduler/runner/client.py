@@ -1,4 +1,5 @@
 import collections.abc as _cabc
+import datetime as _dt
 import logging as _log
 import pathlib as _pl
 import typing as _tp
@@ -133,6 +134,7 @@ class RunnerClient:
             commands=commands,
             results=[result],
             return_paths_glob_pattern=f"{system_name}/results/*/",
+            timeout=_dt.timedelta(minutes=5),
         )
 
         return runner_job
@@ -217,6 +219,7 @@ class RunnerClient:
             object_storage_input_path=object_storage_input_path,
             commands=[simulate_command, post_process_command],
             results=[all_files_result, *single_file_results],
+            timeout=_dt.timedelta(hours=1.5),
         )
 
         return runner_job
