@@ -88,9 +88,7 @@ class RunnerClient:
     def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation
     ) -> _mrun.RunnerJob:
-        parameters = simulation.parameters
-
-        system_name = self._get_system_name(parameters)
+        system_name = self._get_system_name(simulation.parameters)
 
         commands = list[_mrun.GeneralCommand]()
 
@@ -122,11 +120,11 @@ class RunnerClient:
             object_storage_output_file_path=object_storage_output_path,
         )
 
-        serialized_parameters = parameters.model_dump()
+        parameters = simulation.model_dump()
 
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
-            parameters=serialized_parameters,
+            parameters=parameters,
             object_storage_input_path=_mrun.ObjectStorageInputZipFilePath(
                 container="resultes-static",
                 path="pytrnsys-systems/systems-main.zip",

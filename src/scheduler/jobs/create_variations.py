@@ -1,10 +1,11 @@
+import collections.abc as _cabc
 import logging as _log
 import pathlib as _pl
 import typing as _tp
 
+import resultes_pydantic_models.runner as _prun
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
-import resultes_pydantic_models.runner as _prun
 
 import scheduler.runner.client as _rc
 import scheduler.server.server_client as _sc
@@ -31,6 +32,7 @@ class CreateVariationsJob(_sj.SimulationJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
+        payload = None
         async for payload in runner_client.create_variations(self._simulation):
             match payload:
                 case _prun.JobError() as job_error:
@@ -47,7 +49,12 @@ class CreateVariationsJob(_sj.SimulationJobBase):
                 case _:
                     pass
 
-        relative_deck_file_paths = payload.result
+        if not isinstance(payload, _prun.JobSuccess):
+            raise RuntimeError(
+                f"Expected job payload to be success, but was `{payload}`."
+            )
+
+        relative_deck_file_paths = _tp.cast(_cabc.Sequence[str], payload.result)
 
         if relative_deck_file_paths:
             for relative_deck_file_path in relative_deck_file_paths:
