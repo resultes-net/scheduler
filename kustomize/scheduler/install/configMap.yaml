@@ -12,5 +12,7 @@ data:
   runnerLogLevel: "INFO"
   # Set to "false" to stop scheduler from creating throwaway runners to keep instance creation "hot"
   createThrowawayRunners: "true"
+  # Set to "false" to stop scheduler to create runners to be sure to have a free job when any user is logged in
+  ensureFreeJobExistsForLoggedInUser: "true"
 metadata:
   name: config-cm

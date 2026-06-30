@@ -44,6 +44,10 @@ def create_throwaway_runners() -> bool:
     return _read_bool_value("createThrowawayRunners")
 
 
+def ensure_free_job_exists_for_logged_in_user() -> bool:
+    return _read_bool_value("ensureFreeJobExistsForLoggedInUser")
+
+
 def _read_bool_value(file_name: str) -> bool:
     file_path = _MOUNT_DIR_PATH / file_name
 

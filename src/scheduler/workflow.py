@@ -106,6 +106,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     async def _ensure_runner_with_free_job_slot_exists_if_any_user_is_logged_in(
         self,
     ) -> None:
+        if not _cfg.ensure_free_job_exists_for_logged_in_user():
+            return
+
         have_to_create_runner = (
             await self._is_any_user_logged_in()
             and self._runner_clients_manager.have_all_runners_max_jobs()
