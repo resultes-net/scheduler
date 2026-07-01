@@ -106,17 +106,20 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     async def _ensure_runner_with_free_job_slot_exists_if_any_user_is_logged_in(
         self,
     ) -> None:
-        if not _cfg.ensure_free_job_exists_for_logged_in_user():
-            return
-
         have_to_create_runner = (
-            await self._is_any_user_logged_in()
+            await self._shall_keep_one_job_free()
             and self._runner_clients_manager.have_all_runners_max_jobs()
         )
 
         if have_to_create_runner:
             _LOGGER.info("Creating new runner to have free jobs for logged in user.")
             await self._runner_clients_manager.create_new_runner()
+
+    async def _shall_keep_one_job_free(self):
+        return (
+            _cfg.ensure_free_job_exists_for_logged_in_user()
+            and await self._is_any_user_logged_in()
+        )
 
     async def _is_any_user_logged_in(self) -> bool:
         latest_login_on = await self._server_client.get_latest_login_on()
@@ -247,7 +250,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             )
 
     async def _remove_any_unneeded_runners(self) -> None:
-        shall_keep_one_free_job = await self._is_any_user_logged_in()
+        shall_keep_one_free_job = await self._shall_keep_one_job_free()
         await self._runner_clients_manager.remove_any_uneeded_runners(
             shall_keep_one_free_job
         )
