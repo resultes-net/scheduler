@@ -120,7 +120,7 @@ class RunnerClient:
             object_storage_output_file_path=object_storage_output_path,
         )
 
-        parameters = simulation.model_dump()
+        parameters = simulation.model_dump(mode="json")
 
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
