@@ -70,7 +70,9 @@ class RunnerClient:
         runner_options = _mrun.RunnerOptions(
             log_level=log_level, shall_remove_completed_jobs=shall_remove_completed_jobs
         )
-        params: _rjrpct.JsonStructured = {"value": runner_options.model_dump()}
+        params: _rjrpct.JsonStructured = {
+            "value": runner_options.model_dump(mode="json")
+        }
 
         await self._jsonrpc_connection.send_request_and_check_and_get_response(
             "set_options", params
@@ -277,7 +279,7 @@ class RunnerClient:
         self, runner_job: _mrun.RunnerJob, timeout_seconds: float | None = 10.0
     ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         with self._context.add_job(runner_job.id):
-            params = {"value": runner_job.model_dump()}
+            params = {"value": runner_job.model_dump(mode="json")}
 
             try:
                 await self._jsonrpc_connection.send_request_and_check_and_get_response(

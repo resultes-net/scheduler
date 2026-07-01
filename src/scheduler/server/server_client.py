@@ -72,7 +72,7 @@ class ServerClient:
     ) -> _pvar.Variation:
         async with self._session.post(
             f"simulations/{simulation_id}/variations",
-            json=variation.model_dump(),
+            json=variation.model_dump(mode="json"),
         ) as response:
             response.raise_for_status()
             response_json = await response.json()
