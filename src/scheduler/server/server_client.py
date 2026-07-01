@@ -19,7 +19,7 @@ class ServerClient:
             json = await response.json()
 
         latest_login = _psrv.LatestLogin(**json)
-        
+
         return latest_login.on
 
     async def get_simulations_waiting_for_variations_creation(
@@ -33,7 +33,16 @@ class ServerClient:
         simulations = [_psim.Simulation(**s) for s in json]
 
         return simulations
-    
+
+    async def get_running_simulations(self) -> _cabc.Sequence[_psim.Simulation]:
+        params = {"state": "running"}
+        async with self._session.get("simulations", json="", params=params) as response:
+            response.raise_for_status()
+            json = await response.json()
+
+            simulations = [_psim.Simulation(**s) for s in json]
+            return simulations
+
     async def get_simulation(self, simulation_id: str) -> _psim.Simulation:
         async with self._session.get(f"simulation/{simulation_id}") as response:
             response.raise_for_status()

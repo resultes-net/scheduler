@@ -6,6 +6,8 @@ import signal as _sig
 import subprocess as _sp
 
 import aiohttp as _ahttp
+import resultes_pydantic_models.simulations.simulation as _psim
+import resultes_pydantic_models.simulations.variation as _pvar
 
 import scheduler.clouds_yaml as _cyaml
 import scheduler.config as _config
@@ -44,6 +46,9 @@ async def main(
     try:
         async with _ahttp.ClientSession(server_base_uri) as server_session:
             server_client = _sc.ServerClient(server_session)
+
+            await _set_error_state_on_unknown_jobs(server_client)
+
             async with _wf.Looper(
                 server_client,
                 runner_manager,
@@ -61,6 +66,33 @@ def _delete_stale_resources(runner_manager: _run.AbstractRunnerManager):
         runner_manager.delete_all_servers_except(except_ip_addresses=[])
 
     runner_manager.delete_stale_disk_images()
+
+
+async def _set_error_state_on_unknown_jobs(server_client: _sc.ServerClient) -> None:
+    running_simulations = server_client.get_running_simulations()
+    for simulation in await running_simulations:
+        _LOGGER.warning(
+            "Found unknown/leftover simulation %s. Will set it to the error state.",
+            simulation,
+        )
+
+        await server_client.set_simulation_state(
+            simulation.id, _psim.SimulationState.ERROR
+        )
+
+        for variation in simulation.variations:
+            _LOGGER.warning(
+                "Found unknown/leftover simulation %s. Will set it to the error state.",
+                variation,
+            )
+
+            if (
+                variation.state == _pvar.VariationState.WAITING
+                or variation.state == _pvar.VariationState.RUNNING
+            ):
+                await server_client.set_variation_state(
+                    variation.id, _pvar.VariationState.ERROR
+                )
 
 
 def _run_debugger_and_wait_for_client() -> None:
