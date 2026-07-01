@@ -73,7 +73,7 @@ async def _set_error_state_on_unknown_jobs(server_client: _sc.ServerClient) -> N
     for simulation in await running_simulations:
         _LOGGER.warning(
             "Found unknown/leftover simulation %s. Will set it to the error state.",
-            simulation,
+            simulation.id,
         )
 
         await server_client.set_simulation_state(
@@ -82,8 +82,8 @@ async def _set_error_state_on_unknown_jobs(server_client: _sc.ServerClient) -> N
 
         for variation in simulation.variations:
             _LOGGER.warning(
-                "Found unknown/leftover simulation %s. Will set it to the error state.",
-                variation,
+                "Found unknown/leftover variation %s. Will set it to the error state.",
+                variation.id,
             )
 
             if (
