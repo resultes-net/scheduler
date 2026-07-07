@@ -245,6 +245,7 @@ class RunnerClient:
                 r"solar\solar-hourly-A4.png",
                 r"solar\solar-monthly-A4.png",
                 r"source\source-hourly-A4.png",
+                r"output.json",
             ],
         )
 
