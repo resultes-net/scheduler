@@ -219,7 +219,7 @@ class RunnerClient:
             object_storage_input_path=object_storage_input_path,
             commands=[simulate_command, post_process_command],
             results=[all_files_result, *single_file_results],
-            timeout=_dt.timedelta(hours=1.5),
+            timeout=_dt.timedelta(hours=2.0),
         )
 
         return runner_job
