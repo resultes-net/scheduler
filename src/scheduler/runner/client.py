@@ -90,11 +90,9 @@ class RunnerClient:
     def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation
     ) -> _mrun.RunnerJob:
-        system_name = self._get_system_name(simulation.parameters)
-
         commands = list[_mrun.GeneralCommand]()
 
-        if system_name == "PTES":
+        if simulation.type == _psim.Type.PTES:
             create_parameters_ddck_file_command = _mrun.GeneralCommand(
                 program=self._paths.python_exe,
                 args=[
@@ -106,10 +104,12 @@ class RunnerClient:
 
             commands.append(create_parameters_ddck_file_command)
 
+        working_dir = _pl.PureWindowsPath(simulation.type.value.upper())
+
         create_variations_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
-            working_dir=_pl.PureWindowsPath(system_name),
+            working_dir=working_dir,
         )
 
         commands.append(create_variations_command)
@@ -138,18 +138,6 @@ class RunnerClient:
         )
 
         return runner_job
-
-    @staticmethod
-    def _get_system_name(parameters: _params.Parameters) -> str:
-        values = parameters.values
-
-        match values:
-            case _pttes.TtesParameters():
-                return "TTES"
-            case _pptes.PtesParameters():
-                return "PTES"
-            case _:
-                _tp.assert_never(values)
 
     async def simulate_and_post_process_variation(
         self,

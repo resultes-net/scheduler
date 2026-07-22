@@ -1,6 +1,9 @@
+import asyncio as _asyncio
 import collections.abc as _cabc
 import logging as _log
 import pprint as _pprint
+
+import resultes_pydantic_models.simulations.simulation as _psim
 
 import scheduler.jobs.create_variations as _cv
 import scheduler.jobs.simulate_and_post_process_variation as _sppvj
@@ -31,17 +34,32 @@ class RunnableJobsFactory:
     async def _create_create_variations_jobs(
         self,
     ) -> _cabc.Sequence[_cv.CreateVariationsJob]:
-        waiting_simulations = (
+        waiting_get_simulations = (
             await self._server_client.get_simulations_waiting_for_variations_creation()
         )
 
-        if waiting_simulations:
-            data = _pprint.pformat(waiting_simulations, indent=4)
+        if waiting_get_simulations:
+            data = _pprint.pformat(waiting_get_simulations, indent=4)
 
             _LOGGER.info(
                 "Found the following simulations for which to create variations: %s\n",
                 data,
             )
+
+        async def get_params_and_create_sim(
+            get_simulation: _psim.GetSimulation,
+        ) -> _psim.Simulation:
+            parameters = await self._server_client.get_simulation_parameters(
+                get_simulation.id
+            )
+            simulation = _psim.Simulation(
+                **get_simulation.model_dump(), parameters=parameters
+            )
+            return simulation
+
+        waiting_simulations = await _asyncio.gather(
+            *[get_params_and_create_sim(gs) for gs in waiting_get_simulations]
+        )
 
         create_variations_jobs = [
             _cv.CreateVariationsJob(s, self._server_client) for s in waiting_simulations

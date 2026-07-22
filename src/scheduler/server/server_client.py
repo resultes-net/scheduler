@@ -5,6 +5,7 @@ import typing as _tp
 import aiohttp as _ahttp
 import resultes_pydantic_models.common as _pcom
 import resultes_pydantic_models.server as _psrv
+import resultes_pydantic_models.simulations.parameters as _pparams
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
@@ -24,31 +25,35 @@ class ServerClient:
 
     async def get_simulations_waiting_for_variations_creation(
         self,
-    ) -> _cabc.Sequence[_psim.Simulation]:
+    ) -> _cabc.Sequence[_psim.GetSimulation]:
         params = {"state": "waiting-for-variations-creation"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
             json = await response.json()
 
-        simulations = [_psim.Simulation(**s) for s in json]
+        simulations = [_psim.GetSimulation(**s) for s in json]
 
         return simulations
 
-    async def get_running_simulations(self) -> _cabc.Sequence[_psim.Simulation]:
+    async def get_running_simulations(self) -> _cabc.Sequence[_psim.GetSimulation]:
         params = {"state": "running"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
             json = await response.json()
 
-            simulations = [_psim.Simulation(**s) for s in json]
+            simulations = [_psim.GetSimulation(**s) for s in json]
             return simulations
 
-    async def get_simulation(self, simulation_id: str) -> _psim.Simulation:
-        async with self._session.get(f"simulation/{simulation_id}") as response:
+    async def get_simulation_parameters(
+        self, simulation_id: str
+    ) -> _pparams.Parameters:
+        async with self._session.get(
+            f"simulation/{simulation_id}/parameters"
+        ) as response:
             response.raise_for_status()
             json = await response.json()
 
-            return _psim.Simulation(**json)
+            return _pparams.Parameters(**json)
 
     async def get_waiting_variations(self) -> _psrv.WaitingVariations:
         async with self._session.get("waiting-variations") as response:
