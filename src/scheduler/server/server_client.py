@@ -35,13 +35,13 @@ class ServerClient:
 
         return simulations
 
-    async def get_running_simulations(self) -> _cabc.Sequence[_psim.GetSimulation]:
+    async def get_running_simulations(self) -> _cabc.Sequence[_psim.Simulation]:
         params = {"state": "running"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
             json = await response.json()
 
-            simulations = [_psim.GetSimulation(**s) for s in json]
+            simulations = [_psim.Simulation(**s) for s in json]
             return simulations
 
     async def get_simulation_parameters(
