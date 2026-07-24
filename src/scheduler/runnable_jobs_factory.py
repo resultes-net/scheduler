@@ -47,15 +47,15 @@ class RunnableJobsFactory:
             )
 
         async def get_params_and_create_sim(
-            get_simulation: _psim.GetSimulation,
+            simulation: _psim.Simulation,
         ) -> _psim.SimulationWithParams:
             parameters = await self._server_client.get_simulation_parameters(
-                get_simulation.id
+                simulation.id
             )
-            simulation = _psim.SimulationWithParams(
-                **get_simulation.model_dump(), parameters=parameters
+            simulation_with_params = _psim.SimulationWithParams(
+                **simulation.model_dump(), parameters=parameters
             )
-            return simulation
+            return simulation_with_params
 
         waiting_simulations = await _asyncio.gather(
             *[get_params_and_create_sim(gs) for gs in waiting_get_simulations]

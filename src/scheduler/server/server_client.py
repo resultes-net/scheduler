@@ -25,13 +25,13 @@ class ServerClient:
 
     async def get_simulations_waiting_for_variations_creation(
         self,
-    ) -> _cabc.Sequence[_psim.GetSimulation]:
+    ) -> _cabc.Sequence[_psim.Simulation]:
         params = {"state": "waiting-for-variations-creation"}
         async with self._session.get("simulations", json="", params=params) as response:
             response.raise_for_status()
             json = await response.json()
 
-        simulations = [_psim.GetSimulation(**s) for s in json]
+        simulations = [_psim.Simulation(**s) for s in json]
 
         return simulations
 
