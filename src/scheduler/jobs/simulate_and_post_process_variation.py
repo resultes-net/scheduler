@@ -2,9 +2,9 @@ import datetime as _dt
 import logging as _log
 import typing as _tp
 
+import resultes_pydantic_models.runner as _prun
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
-import resultes_pydantic_models.runner as _prun
 
 import scheduler.runnable_job_base as _jb
 import scheduler.runner.client as _rc
@@ -56,11 +56,11 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
-        simulation = await self._server_client.get_simulation(
+        parameters = await self._server_client.get_simulation_parameters(
             self._variation.simulation_id
         )
 
-        n_total_time_steps = simulation.parameters.values.time.n_steps
+        n_total_time_steps = parameters.values.time.n_steps
 
         async for payload in runner_client.simulate_and_post_process_variation(
             self._variation, n_total_time_steps
