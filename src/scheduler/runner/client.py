@@ -104,12 +104,12 @@ class RunnerClient:
 
             commands.append(create_parameters_ddck_file_command)
 
-        working_dir = _pl.PureWindowsPath(simulation.type.value.upper())
+        system_name = simulation.type.value.upper()
 
         create_variations_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["run.pytrnsys"],
-            working_dir=working_dir,
+            working_dir=_pl.PureWindowsPath(system_name),
         )
 
         commands.append(create_variations_command)
