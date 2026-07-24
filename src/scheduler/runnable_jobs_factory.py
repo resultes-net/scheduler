@@ -48,11 +48,11 @@ class RunnableJobsFactory:
 
         async def get_params_and_create_sim(
             get_simulation: _psim.GetSimulation,
-        ) -> _psim.Simulation:
+        ) -> _psim.SimulationWithParams:
             parameters = await self._server_client.get_simulation_parameters(
                 get_simulation.id
             )
-            simulation = _psim.Simulation(
+            simulation = _psim.SimulationWithParams(
                 **get_simulation.model_dump(), parameters=parameters
             )
             return simulation
