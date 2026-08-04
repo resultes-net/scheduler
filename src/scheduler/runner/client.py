@@ -2,16 +2,12 @@ import collections.abc as _cabc
 import datetime as _dt
 import logging as _log
 import pathlib as _pl
-import typing as _tp
 
 import aiohttp as _ahttp
 import resultes_jsonrpc.jsonrpc.connection as _rjjc
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
-import resultes_pydantic_models.simulations.parameters as _params
-import resultes_pydantic_models.simulations.parameters.ptes as _pptes
-import resultes_pydantic_models.simulations.parameters.ttes as _pttes
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
 
@@ -22,6 +18,8 @@ import scheduler.runner.paths as _rp
 _jrpcm.configure()
 
 _LOGGER = _log.getLogger(__name__)
+
+_RESULTES_RESULTS_CONTAINER = "resultes-results"
 
 
 class RunnerClient:
@@ -115,7 +113,7 @@ class RunnerClient:
         commands.append(create_variations_command)
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
-            container="resultes-results", path=f"results/{simulation.id}.zip"
+            container=_RESULTES_RESULTS_CONTAINER, path=f"results/{simulation.id}.zip"
         )
         result = _mrun.MultipleFilesResult(
             glob_patterns=_mrun.GlobPatterns(include=["**"]),
@@ -159,7 +157,7 @@ class RunnerClient:
         object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
 
         object_storage_input_path = _mrun.ObjectStorageInputZipFilePath(
-            container="resultes-results",
+            container=_RESULTES_RESULTS_CONTAINER,
             path=object_storage_input_zip_path,
         )
 
@@ -191,7 +189,7 @@ class RunnerClient:
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
-            container="resultes-results", path=f"results/{variation.id}.zip"
+            container=_RESULTES_RESULTS_CONTAINER, path=f"results/{variation.id}.zip"
         )
 
         all_files_result = _mrun.MultipleFilesResult(
@@ -242,7 +240,7 @@ class RunnerClient:
             _mrun.SingleFileResult(
                 file_path=variation_dir_path / p,
                 object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
-                    container="resultes-results",
+                    container=_RESULTES_RESULTS_CONTAINER,
                     path=f"results/{variation.id}/{p.as_posix()}",
                 ),
             )
@@ -254,7 +252,7 @@ class RunnerClient:
         log_file_result = _mrun.SingleFileResult(
             file_path=relative_log_file_path,
             object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
-                container="resultes-results",
+                container=_RESULTES_RESULTS_CONTAINER,
                 path=f"results/{variation.id}/{relative_log_file_path.name}",
             ),
             on_error=True,
