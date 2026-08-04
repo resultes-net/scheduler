@@ -124,6 +124,9 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
     async def _is_any_user_logged_in(self) -> bool:
         latest_login_on = await self._server_client.get_latest_login_on()
 
+        if not latest_login_on:
+            return False
+
         time_passed_since_latest_login = _pcom.utc_now() - latest_login_on
 
         # Keep runners for 30 minutes (login timeout) + 5 minute buffer to avoid
