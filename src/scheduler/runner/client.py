@@ -90,6 +90,14 @@ class RunnerClient:
     ) -> _mrun.RunnerJob:
         commands = list[_mrun.GeneralCommand]()
 
+        create_common_parameters_ddck_file_command = _mrun.GeneralCommand(
+            program=self._paths.python_exe,
+            args=[r"common\create_common_parameters_ddck_file.py", "parameters.json"],
+            working_dir=_pl.PureWindowsPath("."),
+        )
+
+        commands.append(create_common_parameters_ddck_file_command)
+
         if simulation.type == _psim.Type.PTES:
             create_parameters_ddck_file_command = _mrun.GeneralCommand(
                 program=self._paths.python_exe,
