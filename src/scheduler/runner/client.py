@@ -88,29 +88,21 @@ class RunnerClient:
     def _create_create_variations_runner_job(
         self, simulation: _psim.Simulation
     ) -> _mrun.RunnerJob:
-        commands = list[_mrun.GeneralCommand]()
-
         create_common_parameters_ddck_file_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=[r"common\create_common_parameters_ddck_file.py", "parameters.json"],
             working_dir=_pl.PureWindowsPath("."),
         )
 
-        commands.append(create_common_parameters_ddck_file_command)
-
-        if simulation.type == _psim.Type.PTES:
-            create_parameters_ddck_file_command = _mrun.GeneralCommand(
-                program=self._paths.python_exe,
-                args=[
-                    r"PTES\create_parameters_ddck_file.py",
-                    "parameters.json",
-                ],
-                working_dir=_pl.PureWindowsPath("."),
-            )
-
-            commands.append(create_parameters_ddck_file_command)
-
         system_name = simulation.type.value.upper()
+        create_parameters_ddck_file_command = _mrun.GeneralCommand(
+            program=self._paths.python_exe,
+            args=[
+                rf"{system_name}\create_parameters_ddck_file.py",
+                "parameters.json",
+            ],
+            working_dir=_pl.PureWindowsPath("."),
+        )
 
         create_variations_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
@@ -118,7 +110,11 @@ class RunnerClient:
             working_dir=_pl.PureWindowsPath(system_name),
         )
 
-        commands.append(create_variations_command)
+        commands = [
+            create_common_parameters_ddck_file_command,
+            create_parameters_ddck_file_command,
+            create_variations_command,
+        ]
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
             container=_RESULTES_RESULTS_CONTAINER, path=f"results/{simulation.id}.zip"
