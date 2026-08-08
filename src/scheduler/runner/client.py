@@ -144,10 +144,11 @@ class RunnerClient:
     async def simulate_and_post_process_variation(
         self,
         variation: _pvar.Variation,
+        system_type: _psim.Type,
         n_total_time_steps: int,
     ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         runner_job = self._create_simulate_and_post_process_variation_runner_job(
-            variation, n_total_time_steps
+            variation, system_type, n_total_time_steps
         )
 
         async for payload in self._run_job_on_client(runner_job):
@@ -156,6 +157,7 @@ class RunnerClient:
     def _create_simulate_and_post_process_variation_runner_job(
         self,
         variation: _pvar.Variation,
+        system_type: _psim.Type,
         n_total_time_steps: int,
     ) -> _mrun.RunnerJob:
         object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
@@ -175,8 +177,10 @@ class RunnerClient:
             relative_deck_file_containing_dir_path / deck_file_name
         )
 
+        system_name = system_type.value.upper()
+
         relative_tempereratures_step_prt_file_path = (
-            relative_deck_file_containing_dir_path / "PTES_T.prt"
+            relative_deck_file_containing_dir_path / f"{system_name}_T.prt"
         )
 
         simulate_command = _mrun.RunTrnsysCommand(
@@ -189,7 +193,7 @@ class RunnerClient:
         post_process_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
             args=["process.pytrnsys", "results"],
-            working_dir=_pl.PureWindowsPath("PTES"),
+            working_dir=_pl.PureWindowsPath(system_name),
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(

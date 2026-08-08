@@ -15,7 +15,11 @@ _LOGGER = _log.getLogger(__name__)
 
 class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
     def __init__(
-        self, variation: _pvar.Variation, user_id: str, server_client: _sc.ServerClient
+        self,
+        variation: _pvar.Variation,
+        system_type: _psim.Type,
+        user_id: str,
+        server_client: _sc.ServerClient,
     ) -> None:
         if variation.state != _pvar.VariationState.WAITING:
             raise ValueError(
@@ -26,6 +30,7 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
         super().__init__()
 
         self._variation = variation
+        self._system_type = system_type
         self._user_id = user_id
         self._server_client = server_client
 
@@ -63,7 +68,7 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
         n_total_time_steps = parameters.values.time.n_steps
 
         async for payload in runner_client.simulate_and_post_process_variation(
-            self._variation, n_total_time_steps
+            self._variation, self._system_type, n_total_time_steps
         ):
             match payload:
                 case _prun.JobProgress(progress=progress):
