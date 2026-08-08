@@ -80,11 +80,15 @@ class RunnableJobsFactory:
                 data,
             )
 
+        system_types = {s.id: s.type for s in waiting_variations.associated_simulations}
         user_ids = {s.id: s.user_id for s in waiting_variations.associated_simulations}
 
         simulate_variation_jobs = [
             _sppvj.SimulateAndPostProcessVariation(
-                v, user_ids[v.simulation_id], self._server_client
+                v,
+                system_types[v.simulation_id],
+                user_ids[v.simulation_id],
+                self._server_client,
             )
             for v in waiting_variations.waiting_variations
         ]
