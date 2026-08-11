@@ -2,6 +2,7 @@ import asyncio as _asyncio
 import collections.abc as _cabc
 import logging as _log
 import pprint as _pprint
+import typing as _tp
 
 import resultes_pydantic_models.simulations.simulation as _psim
 
@@ -83,14 +84,26 @@ class RunnableJobsFactory:
         system_types = {s.id: s.type for s in waiting_variations.associated_simulations}
         user_ids = {s.id: s.user_id for s in waiting_variations.associated_simulations}
 
-        simulate_variation_jobs = [
-            _sppvj.SimulateAndPostProcessVariation(
-                v,
-                system_types[v.simulation_id],
-                user_ids[v.simulation_id],
+        simulate_variation_jobs = list[_sppvj.SimulateAndPostProcessVariation]()
+        for variation in waiting_variations.waiting_variations:
+            simulation_id = variation.simulation_id
+            system_type = system_types[simulation_id]
+
+            if system_type == _psim.Type.TTES:
+                factory_function = _sppvj.SimulateAndPostProcessVariation.create_ttes
+            elif system_type == _psim.Type.PTES:
+                factory_function = _sppvj.SimulateAndPostProcessVariation.create_ptes
+            elif system_type == _psim.Type.BTES:
+                factory_function = _sppvj.SimulateAndPostProcessVariation.create_btes
+            else:
+                _tp.assert_never(system_type)
+
+            job = factory_function(
+                variation,
+                user_ids[simulation_id],
                 self._server_client,
             )
-            for v in waiting_variations.waiting_variations
-        ]
+
+            simulate_variation_jobs.append(job)
 
         return simulate_variation_jobs

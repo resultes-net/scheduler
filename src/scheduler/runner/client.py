@@ -146,9 +146,13 @@ class RunnerClient:
         variation: _pvar.Variation,
         system_type: _psim.Type,
         n_total_time_steps: int,
+        result_file_paths: _cabc.Sequence[_pl.PureWindowsPath],
     ) -> _cabc.AsyncIterable[_jp.JobPayload]:
         runner_job = self._create_simulate_and_post_process_variation_runner_job(
-            variation, system_type, n_total_time_steps
+            variation,
+            system_type,
+            n_total_time_steps,
+            result_file_paths,
         )
 
         async for payload in self._run_job_on_client(runner_job):
@@ -159,6 +163,7 @@ class RunnerClient:
         variation: _pvar.Variation,
         system_type: _psim.Type,
         n_total_time_steps: int,
+        result_file_paths: _cabc.Sequence[_pl.PureWindowsPath],
     ) -> _mrun.RunnerJob:
         object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
 
@@ -206,7 +211,9 @@ class RunnerClient:
             on_error=True,
         )
 
-        single_file_results = self._create_single_file_results(variation)
+        single_file_results = self._create_single_file_results(
+            variation, result_file_paths
+        )
 
         runner_job = _mrun.RunnerJob(
             id=variation.id,
@@ -221,28 +228,8 @@ class RunnerClient:
     @staticmethod
     def _create_single_file_results(
         variation: _pvar.Variation,
+        result_file_paths: _cabc.Sequence[_pl.PureWindowsPath],
     ) -> _cabc.Sequence[_mrun.SingleFileResult]:
-        plot_result_paths = map(
-            _pl.PureWindowsPath,
-            [
-                r"balance\balance-monthly-A4.png",
-                r"boiler\boiler-hourly-A4.png",
-                r"hp\balance-monthly-A4.png",
-                r"hp\q_t-A4.png",
-                r"hx\effectiveness-hourly-A4.png",
-                r"hx\LMTD-hourly-A4.png",
-                r"ptes\balance-monthly-A4.png",
-                r"ptes\soc-hourly-A4.png",
-                r"ptes\t-ptes-hourly-A4.png",
-                r"sink\sink-hourly-A4.png",
-                r"solar\q_t-A4.png",
-                r"solar\solar-hourly-A4.png",
-                r"solar\solar-monthly-A4.png",
-                r"source\source-hourly-A4.png",
-                r"output.json",
-            ],
-        )
-
         variation_dir_path = variation.relative_deck_file_containing_dir_path
         plot_results = [
             _mrun.SingleFileResult(
@@ -252,7 +239,7 @@ class RunnerClient:
                     path=f"results/{variation.id}/{p.as_posix()}",
                 ),
             )
-            for p in plot_result_paths
+            for p in result_file_paths
         ]
 
         relative_log_file_path = variation_dir_path / f"{variation_dir_path.name}.log"

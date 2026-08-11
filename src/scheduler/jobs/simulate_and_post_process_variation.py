@@ -1,5 +1,7 @@
+import collections.abc as _cabc
 import datetime as _dt
 import logging as _log
+import pathlib as _pl
 import typing as _tp
 
 import resultes_pydantic_models.runner as _prun
@@ -12,12 +14,87 @@ import scheduler.server.server_client as _sc
 
 _LOGGER = _log.getLogger(__name__)
 
+_TTES_RESULT_FILE_PATHS = list(
+    map(
+        _pl.PureWindowsPath,
+        [
+            r"balance\balance-monthly-A4.png",
+            r"boiler\boiler-hourly-A4.png",
+            r"sink\sink-hourly-A4.png",
+            r"solar\q_t-A4.png",
+            r"solar\solar-hourly-A4.png",
+            r"solar\solar-monthly-A4.png",
+            r"source\source-hourly-A4.png",
+            r"output.json",
+        ],
+    )
+)
+
+_PTES_RESULT_FILE_PATHS = list(
+    map(
+        _pl.PureWindowsPath,
+        [
+            r"balance\balance-monthly-A4.png",
+            r"boiler\boiler-hourly-A4.png",
+            r"hp\balance-monthly-A4.png",
+            r"hp\q_t-A4.png",
+            r"hx\effectiveness-hourly-A4.png",
+            r"hx\LMTD-hourly-A4.png",
+            r"ptes\balance-monthly-A4.png",
+            r"ptes\soc-hourly-A4.png",
+            r"ptes\t-ptes-hourly-A4.png",
+            r"sink\sink-hourly-A4.png",
+            r"solar\q_t-A4.png",
+            r"solar\solar-hourly-A4.png",
+            r"solar\solar-monthly-A4.png",
+            r"source\source-hourly-A4.png",
+            r"output.json",
+        ],
+    )
+)
+
+_BTES_RESULT_FILE_PATHS = list[_pl.PureWindowsPath]()
+
 
 class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
+    @staticmethod
+    def create_ttes(
+        variation: _pvar.Variation,
+        user_id: str,
+        server_client: _sc.ServerClient,
+    ) -> "SimulateAndPostProcessVariation":
+
+        return SimulateAndPostProcessVariation(
+            variation, _psim.Type.TTES, _TTES_RESULT_FILE_PATHS, user_id, server_client
+        )
+
+    @staticmethod
+    def create_ptes(
+        variation: _pvar.Variation,
+        user_id: str,
+        server_client: _sc.ServerClient,
+    ) -> "SimulateAndPostProcessVariation":
+
+        return SimulateAndPostProcessVariation(
+            variation, _psim.Type.PTES, _PTES_RESULT_FILE_PATHS, user_id, server_client
+        )
+
+    @staticmethod
+    def create_btes(
+        variation: _pvar.Variation,
+        user_id: str,
+        server_client: _sc.ServerClient,
+    ) -> "SimulateAndPostProcessVariation":
+
+        return SimulateAndPostProcessVariation(
+            variation, _psim.Type.BTES, _BTES_RESULT_FILE_PATHS, user_id, server_client
+        )
+
     def __init__(
         self,
         variation: _pvar.Variation,
         system_type: _psim.Type,
+        result_file_paths: _cabc.Sequence[_pl.PureWindowsPath],
         user_id: str,
         server_client: _sc.ServerClient,
     ) -> None:
@@ -31,6 +108,7 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
 
         self._variation = variation
         self._system_type = system_type
+        self._result_file_paths = result_file_paths
         self._user_id = user_id
         self._server_client = server_client
 
@@ -68,7 +146,10 @@ class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
         n_total_time_steps = parameters.values.time.n_steps
 
         async for payload in runner_client.simulate_and_post_process_variation(
-            self._variation, self._system_type, n_total_time_steps
+            self._variation,
+            self._system_type,
+            n_total_time_steps,
+            self._result_file_paths,
         ):
             match payload:
                 case _prun.JobProgress(progress=progress):
