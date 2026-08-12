@@ -20,11 +20,17 @@ _TTES_RESULT_FILE_PATHS = list(
         [
             r"balance\balance-monthly-A4.png",
             r"boiler\boiler-hourly-A4.png",
+            r"q_vs_t\q_t-A4.png",
             r"sink\sink-hourly-A4.png",
             r"solar\q_t-A4.png",
             r"solar\solar-hourly-A4.png",
             r"solar\solar-monthly-A4.png",
+            r"solar\stagnation-hourly-A4.png",
             r"source\source-hourly-A4.png",
+            r"ttes\balance-monthly-A4.png",
+            r"ttes\soc-hourly-A4.png",
+            r"ttes\t-ptes-hourly-A4.png",
+            r"ttes\top-losses-hourly-A4.png",
             r"output.json",
         ],
     )
