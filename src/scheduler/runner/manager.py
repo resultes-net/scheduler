@@ -129,12 +129,20 @@ class _ServerFactory:
             block_device_mapping=block_device_mapping,
         )
 
-        while True:
-            server = self._connection.compute.find_server(server.id)
+        server_id = server.id
 
-            ip_address = _get_ip_address(server)
-            if ip_address:
-                return ip_address
+        while True:
+            server = self._connection.compute.find_server(server_id)
+
+            if server:
+                ip_address = _get_ip_address(server)
+                if ip_address:
+                    return ip_address
+            else:
+                _LOGGER.warning(
+                    "Searching for server %s after having created it returned None.",
+                    server_id,
+                )
 
             seconds = 5.0
             _time.sleep(seconds)
@@ -239,7 +247,7 @@ class RunnerManager(AbstractRunnerManager):
             disk_images.delete_stale_disk_images()
 
     @_ctx.contextmanager
-    def _create_connection(self) -> _cabc.Iterator[_oconn.Connection]:
+    def _create_connection(self) -> _cabc.Generator[_oconn.Connection]:
         data = _cyaml.get_clouds_yaml_openstack_json(self._clouds_yaml_file_path)
 
         connection = _ost.connect(
