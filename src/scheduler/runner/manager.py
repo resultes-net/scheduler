@@ -249,7 +249,7 @@ class RunnerManager(AbstractRunnerManager):
     def _create_connection(self) -> _cabc.Generator[_oconn.Connection]:
         data = _cyaml.get_clouds_yaml_openstack_json(self._clouds_yaml_file_path)
 
-        os_password = data["auth"]["password"]
+        os_password = data["auth"].pop("password")
 
         connection = _ost.connect(
             load_yaml_config=False,
