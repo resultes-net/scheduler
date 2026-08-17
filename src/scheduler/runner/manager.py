@@ -254,8 +254,8 @@ class RunnerManager(AbstractRunnerManager):
         connection = _ost.connect(
             load_yaml_config=False,
             load_envvars=False,
+            os_password=os_password,
             **data,
-            os_password=os_password
         )
 
         yield connection
