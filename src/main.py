@@ -166,9 +166,7 @@ if __name__ == "__main__":
             "Using OpenStack runner manager with config file %s.", clouds_yaml_file_path
         )
 
-        os_password = _os.environ["OS_PASSWORD"]
-
-        runner_manager = _run.RunnerManager(os_password, clouds_yaml_file_path)
+        runner_manager = _run.RunnerManager(clouds_yaml_file_path)
     else:
         _LOGGER.info("Using dummy runner manager.")
         host = _get_windows_host_ip_address()

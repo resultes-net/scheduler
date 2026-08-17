@@ -1,2 +1,2 @@
-runner_keypair.pem
-PCP-4GXOPDF-openrc.sh
+! Will be mounted into the container at `secrets` by Kubernetes
+secrets/

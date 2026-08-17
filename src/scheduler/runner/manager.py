@@ -182,8 +182,7 @@ class _ServerFactory:
 
 
 class RunnerManager(AbstractRunnerManager):
-    def __init__(self, os_password: str, clouds_yaml_file_path: _pl.Path) -> None:
-        self._os_password = os_password
+    def __init__(self, clouds_yaml_file_path: _pl.Path) -> None:
         self._clouds_yaml_file_path = clouds_yaml_file_path
 
     @property
@@ -253,7 +252,6 @@ class RunnerManager(AbstractRunnerManager):
         connection = _ost.connect(
             load_yaml_config=False,
             load_envvars=False,
-            os_password=self._os_password,
             **data,
         )
 

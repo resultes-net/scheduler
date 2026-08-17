@@ -15,8 +15,6 @@ COPY openstack-utils openstack-utils
 COPY jsonrpc jsonrpc
 RUN docker-utils/uv-pip-install.sh -r requirements/run.txt
 
-COPY config/clouds.yaml config/clouds.yaml
-
 COPY src src
 WORKDIR /app/src
 

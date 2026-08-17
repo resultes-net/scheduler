@@ -52,13 +52,18 @@ spec:
                   key: pythonFrozenModules
           volumeMounts:
             - name: config-volume
-              mountPath: /app/config-cm
+              mountPath: /app/config/configMap
+            - name: secrets-volume
+              mountPath: /app/config/secrets
+              readOnly: true
       volumes:
         - name: config-volume
           configMap:
             name: config-cm
+        - name: secrets-volume
+          secret:
+            secretName: openstack
 
-                            
       imagePullSecrets:
         - name: read-ghcr-io-auth-secret
       restartPolicy: Always

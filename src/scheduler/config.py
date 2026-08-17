@@ -1,7 +1,7 @@
 import logging as _log
 import pathlib as _pl
 
-_MOUNT_DIR_PATH = _pl.Path(__file__).parents[2] / "config-cm"
+_MOUNT_DIR_PATH = _pl.Path(__file__).parents[2] / "config" / "configMap"
 
 _LOGGER = _log.getLogger(__name__)
 
