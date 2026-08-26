@@ -47,11 +47,9 @@ class RunnerClientsManager:
     async def create_new_runner(self) -> None:
         _LOGGER.info("Creating new runner...")
 
-        wait_seconds = 7 * 60
-        async with _asyncio.timeout(wait_seconds):
-            ip_address = await _asyncio.to_thread(
-                self._runner_manager.create_server_and_get_ip
-            )
+        ip_address = await _asyncio.to_thread(
+            self._runner_manager.create_server_and_get_ip
+        )
 
         _LOGGER.info("...DONE. New runner with IP address %s created.", ip_address)
 

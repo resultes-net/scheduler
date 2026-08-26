@@ -129,9 +129,18 @@ class _ServerFactory:
             block_device_mapping=block_device_mapping,
         )
 
-        server_id = server.id
+        server_id = _tp.cast(str, server.id)
+
+        time_taken_secs = 0
+        max_time_taken_secs = 7 * 60
+        time_to_sleep_secs = 5.0
 
         while True:
+            if time_taken_secs > max_time_taken_secs:
+                raise RuntimeError(
+                    f"Time out after {max_time_taken_secs} second(s) waiting for server {server_id} to come online and get an IP address.",
+                )
+
             server = self._connection.compute.find_server(server_id)
 
             if server:
@@ -144,8 +153,8 @@ class _ServerFactory:
                     server_id,
                 )
 
-            seconds = 5.0
-            _time.sleep(seconds)
+            time_taken_secs += time_to_sleep_secs
+            _time.sleep(time_to_sleep_secs)
 
     def _get_runner_image_id(self) -> str:
         image = self._connection.image.find_image("runner-image")

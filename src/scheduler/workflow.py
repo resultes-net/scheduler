@@ -242,15 +242,7 @@ class Looper(_ctx.AbstractAsyncContextManager["Looper"]):
             created_on_formatted,
         )
 
-        timeout_minutes = 5
-        try:
-            async with _asyncio.timeout(timeout_minutes * 60.0):
-                await self._runner_clients_manager.create_new_runner()
-        except TimeoutError:
-            _LOGGER.warning(
-                "Creating of throw-away runner timed out after %i minutes.",
-                timeout_minutes,
-            )
+        await self._runner_clients_manager.create_new_runner()
 
     async def _remove_any_unneeded_runners(self) -> None:
         shall_keep_one_free_job = await self._shall_keep_one_job_free()
