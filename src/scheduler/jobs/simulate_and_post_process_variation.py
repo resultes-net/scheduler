@@ -59,7 +59,33 @@ _PTES_RESULT_FILE_PATHS = list(
     )
 )
 
-_BTES_RESULT_FILE_PATHS = list[_pl.PureWindowsPath]()
+_BTES_RESULT_FILE_PATHS = list(
+    map(
+        _pl.PureWindowsPath,
+        [
+            r"balance\balance-monthly-A4.png",
+            r"boiler\boiler-hourly-A4.png",
+            r"btes\q-hourly-A4.png",
+            r"btes\t-avg-field-hourly-A4.png",
+            r"btes\t-avg-hourly-A4.png",
+            r"control\mode-hourly-A4.png",
+            r"hp\balance-monthly-A4.png",
+            r"hp\q_t-A4.png",
+            r"hx\effectiveness-hourly-A4.png",
+            r"hx\LMTD-hourly-A4.png",
+            r"hx\q-hourly-A4.png",
+            r"sink\sink-hourly-A4.png",
+            r"solar\q_t-A4.png",
+            r"solar\solar-hourly-A4.png",
+            r"solar\solar-monthly-A4.png",
+            r"solar\stagnation-hourly-A4.png",
+            r"solar\temp-hourly-A4.png",
+            r"tes\q_t-A4.png",
+            r"tes\tes-temps-A4.png",
+            r"output.json",
+        ],
+    )
+)
 
 
 class SimulateAndPostProcessVariation(_jb.RunnableJobBase):
