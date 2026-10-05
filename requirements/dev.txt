@@ -9,4 +9,6 @@
 -e file:./jsonrpc
 -e file:./openstack-utils
 -e file:./pydantic-models
+dnspython==2.8.0
+email-validator==2.3.0
 jsonrpcclient==4.0.3

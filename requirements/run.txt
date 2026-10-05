@@ -7,6 +7,8 @@
 #
 -r run-3rd-party.txt
 debtcollector==3.0.0
+dnspython==2.8.0
+email-validator==2.3.0
 jsonrpcclient==4.0.3
 msgpack==1.1.1
 netaddr==1.3.0

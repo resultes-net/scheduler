@@ -129,10 +129,14 @@ class RunnerClient:
         runner_job = _mrun.RunnerJob(
             id=simulation.id,
             parameters=parameters,
-            object_storage_input_path=_mrun.ObjectStorageInputZipFilePath(
-                container="resultes-static",
-                path="pytrnsys-systems/systems-main.zip",
-            ),
+            inputs=[
+                _mrun.MultipleFilesInput(
+                    object_storage_input_file_path=_mrun.ObjectStorageInputZipFilePath(
+                        container="resultes-static",
+                        path="pytrnsys-systems/systems-main.zip",
+                    )
+                )
+            ],
             commands=commands,
             results=[result],
             return_paths_glob_pattern=f"{system_name}/results/*/",
@@ -217,7 +221,11 @@ class RunnerClient:
 
         runner_job = _mrun.RunnerJob(
             id=variation.id,
-            object_storage_input_path=object_storage_input_path,
+            inputs=[
+                _mrun.MultipleFilesInput(
+                    object_storage_input_file_path=object_storage_input_path
+                )
+            ],
             commands=[simulate_command, post_process_command],
             results=[all_files_result, *single_file_results],
             timeout=_dt.timedelta(hours=2.0),

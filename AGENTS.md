@@ -17,6 +17,13 @@ https://github.com/resultes-net/issues/blob/main/AGENTS.md. This file only adds 
   `git fetch ../../server/pydantic-models main`, then check out or rebase onto `FETCH_HEAD`, and commit the new submodule
   commit in `scheduler`.
 
+## Runner jobs
+- `scheduler.runner.client.RunnerClient` builds the runner jobs. Inputs are processed in order, so later inputs
+  overwrite files of earlier ones.
+- The simulate-and-post-process jobs get their whole working directory from the create-variations job's results zip
+  (glob `**`). Files that the simulation needs (e.g. weather data) therefore only need to be inputs of the
+  create-variations job.
+
 ## Tests
 - `pytest.ini` sets `python_files = *.py`: tests live next to the code in regular modules.
 - Several tests need external services:
