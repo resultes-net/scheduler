@@ -10,6 +10,7 @@ import resultes_jsonrpc.websockets.client as _rjwc
 import resultes_pydantic_models.runner as _mrun
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
+import resultes_pydantic_models.weather_data as _pwd
 
 import scheduler.job_payload as _jp
 import scheduler.jrpc_methods as _jrpcm
@@ -20,6 +21,9 @@ _jrpcm.configure()
 _LOGGER = _log.getLogger(__name__)
 
 _RESULTES_RESULTS_CONTAINER = "resultes-results"
+
+# Where the systems code expects the selected weather data, relative to its root.
+_WEATHER_DATA_DIR_PATH = _pl.PureWindowsPath(r"common\ddck\parameters") / _pwd.DIR_NAME
 
 
 class RunnerClient:
@@ -79,14 +83,15 @@ class RunnerClient:
     async def create_variations(
         self,
         simulation: _psim.Simulation,
+        weather_data: _pwd.GetWeatherData,
     ) -> _cabc.AsyncIterable[_jp.JobPayload]:
-        runner_job = self._create_create_variations_runner_job(simulation)
+        runner_job = self._create_create_variations_runner_job(simulation, weather_data)
 
         async for notification in self._run_job_on_client(runner_job):
             yield notification
 
     def _create_create_variations_runner_job(
-        self, simulation: _psim.Simulation
+        self, simulation: _psim.Simulation, weather_data: _pwd.GetWeatherData
     ) -> _mrun.RunnerJob:
         create_common_parameters_ddck_file_command = _mrun.GeneralCommand(
             program=self._paths.python_exe,
@@ -135,7 +140,15 @@ class RunnerClient:
                         container="resultes-static",
                         path="pytrnsys-systems/systems-main.zip",
                     )
-                )
+                ),
+                # After the systems code, as inputs are processed in order. The
+                # simulate jobs get the weather data from this job's results.
+                _mrun.MultipleFilesInput(
+                    object_storage_input_file_path=_pwd.get_object_storage_input_file_path(
+                        weather_data
+                    ),
+                    dir_path=_WEATHER_DATA_DIR_PATH,
+                ),
             ],
             commands=commands,
             results=[result],

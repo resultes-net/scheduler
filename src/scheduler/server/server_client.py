@@ -8,6 +8,7 @@ import resultes_pydantic_models.server as _psrv
 import resultes_pydantic_models.simulations.parameters as _pparams
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
+import resultes_pydantic_models.weather_data as _pwd
 
 
 class ServerClient:
@@ -57,6 +58,13 @@ class ServerClient:
             json = await response.json()
 
             return _pparams.Parameters(**json)
+
+    async def get_weather_data(self, weather_data_id: str) -> _pwd.GetWeatherData:
+        async with self._session.get(f"weather-data/{weather_data_id}") as response:
+            response.raise_for_status()
+            json = await response.json()
+
+        return _pwd.GetWeatherData(**json)
 
     async def get_waiting_variations(self) -> _psrv.WaitingVariations:
         async with self._session.get("waiting-variations") as response:

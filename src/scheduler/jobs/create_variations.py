@@ -6,6 +6,7 @@ import typing as _tp
 import resultes_pydantic_models.runner as _prun
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
+import resultes_pydantic_models.weather_data as _pwd
 
 import scheduler.runner.client as _rc
 import scheduler.server.server_client as _sc
@@ -17,12 +18,17 @@ _LOGGER = _log.getLogger(__name__)
 
 class CreateVariationsJob(_sj.SimulationJobBase):
     def __init__(
-        self, simulation: _psim.Simulation, server_client: _sc.ServerClient
+        self,
+        simulation: _psim.Simulation,
+        weather_data: _pwd.GetWeatherData,
+        server_client: _sc.ServerClient,
     ) -> None:
         if simulation.state != _psim.SimulationState.WAITING_FOR_VARIATIONS_CREATION:
             raise ValueError("Simulation not waiting for creations of variations.")
 
         super().__init__(simulation, server_client)
+
+        self._weather_data = weather_data
 
     @_tp.override
     async def set_started(self) -> None:
@@ -33,7 +39,9 @@ class CreateVariationsJob(_sj.SimulationJobBase):
     @_tp.override
     async def run(self, runner_client: _rc.RunnerClient) -> None:
         payload = None
-        async for payload in runner_client.create_variations(self._simulation):
+        async for payload in runner_client.create_variations(
+            self._simulation, self._weather_data
+        ):
             match payload:
                 case _prun.JobError() as job_error:
                     _LOGGER.error(

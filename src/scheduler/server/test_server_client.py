@@ -24,3 +24,14 @@ class TestServerClient:
             client = _sc.ServerClient(session)
             waiting_variations = await client.get_waiting_variations()
             print(waiting_variations)
+
+    @_pt.mark.asyncio
+    async def test_get_weather_data(
+        self,
+    ) -> None:
+        async with _ahttp.ClientSession("http://localhost:8000") as session:
+            client = _sc.ServerClient(session)
+            weather_data = await client.get_weather_data("alpine")
+
+        assert weather_data.id == "alpine"
+        assert weather_data.user_id is None

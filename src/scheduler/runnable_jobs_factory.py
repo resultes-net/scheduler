@@ -47,24 +47,21 @@ class RunnableJobsFactory:
                 data,
             )
 
-        async def get_params_and_create_sim(
-            simulation: _psim.Simulation,
-        ) -> _psim.SimulationWithParams:
-            parameters = await self._server_client.get_simulation_parameters(
-                simulation.id
+        async def create_job(simulation: _psim.Simulation) -> _cv.CreateVariationsJob:
+            parameters, weather_data = await _asyncio.gather(
+                self._server_client.get_simulation_parameters(simulation.id),
+                self._server_client.get_weather_data(simulation.weather_data_id),
             )
             simulation_with_params = _psim.SimulationWithParams(
                 **simulation.model_dump(), parameters=parameters
             )
-            return simulation_with_params
+            return _cv.CreateVariationsJob(
+                simulation_with_params, weather_data, self._server_client
+            )
 
-        waiting_simulations = await _asyncio.gather(
-            *[get_params_and_create_sim(gs) for gs in waiting_get_simulations]
+        create_variations_jobs = await _asyncio.gather(
+            *[create_job(gs) for gs in waiting_get_simulations]
         )
-
-        create_variations_jobs = [
-            _cv.CreateVariationsJob(s, self._server_client) for s in waiting_simulations
-        ]
 
         return create_variations_jobs
 
