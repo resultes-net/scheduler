@@ -7,6 +7,7 @@ import aiohttp as _ahttp
 import resultes_jsonrpc.jsonrpc.connection as _rjjc
 import resultes_jsonrpc.jsonrpc.types as _rjrpct
 import resultes_jsonrpc.websockets.client as _rjwc
+import resultes_pydantic_models.results as _pres
 import resultes_pydantic_models.runner as _mrun
 import resultes_pydantic_models.simulations.simulation as _psim
 import resultes_pydantic_models.simulations.variation as _pvar
@@ -19,8 +20,6 @@ import scheduler.runner.paths as _rp
 _jrpcm.configure()
 
 _LOGGER = _log.getLogger(__name__)
-
-_RESULTES_RESULTS_CONTAINER = "resultes-results"
 
 # Where the systems code expects the selected weather data, relative to its root.
 _WEATHER_DATA_DIR_PATH = _pl.PureWindowsPath(r"common\ddck\parameters") / _pwd.DIR_NAME
@@ -122,7 +121,8 @@ class RunnerClient:
         ]
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
-            container=_RESULTES_RESULTS_CONTAINER, path=f"results/{simulation.id}.zip"
+            container=_pres.OBJECT_STORAGE_CONTAINER,
+            path=_pres.get_simulation_zip_path(simulation.id),
         )
         result = _mrun.MultipleFilesResult(
             glob_patterns=_mrun.GlobPatterns(include=["**"]),
@@ -182,11 +182,9 @@ class RunnerClient:
         n_total_time_steps: int,
         result_file_paths: _cabc.Sequence[_pl.PureWindowsPath],
     ) -> _mrun.RunnerJob:
-        object_storage_input_zip_path = f"results/{variation.simulation_id}.zip"
-
         object_storage_input_path = _mrun.ObjectStorageInputZipFilePath(
-            container=_RESULTES_RESULTS_CONTAINER,
-            path=object_storage_input_zip_path,
+            container=_pres.OBJECT_STORAGE_CONTAINER,
+            path=_pres.get_simulation_zip_path(variation.simulation_id),
         )
 
         relative_deck_file_containing_dir_path = (
@@ -219,7 +217,8 @@ class RunnerClient:
         )
 
         object_storage_output_path = _mrun.ObjectStorageOutputZipFilePath(
-            container=_RESULTES_RESULTS_CONTAINER, path=f"results/{variation.id}.zip"
+            container=_pres.OBJECT_STORAGE_CONTAINER,
+            path=_pres.get_variation_zip_path(variation.id),
         )
 
         all_files_result = _mrun.MultipleFilesResult(
@@ -256,8 +255,8 @@ class RunnerClient:
             _mrun.SingleFileResult(
                 file_path=variation_dir_path / p,
                 object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
-                    container=_RESULTES_RESULTS_CONTAINER,
-                    path=f"results/{variation.id}/{p.as_posix()}",
+                    container=_pres.OBJECT_STORAGE_CONTAINER,
+                    path=_pres.get_variation_file_path(variation.id, p.as_posix()),
                 ),
             )
             for p in result_file_paths
@@ -268,8 +267,10 @@ class RunnerClient:
         log_file_result = _mrun.SingleFileResult(
             file_path=relative_log_file_path,
             object_storage_output_file_path=_mrun.ObjectStorageOutputFilePath(
-                container=_RESULTES_RESULTS_CONTAINER,
-                path=f"results/{variation.id}/{relative_log_file_path.name}",
+                container=_pres.OBJECT_STORAGE_CONTAINER,
+                path=_pres.get_variation_file_path(
+                    variation.id, relative_log_file_path.name
+                ),
             ),
             on_error=True,
         )
