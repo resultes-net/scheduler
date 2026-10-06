@@ -26,6 +26,8 @@ https://github.com/resultes-net/issues/blob/main/AGENTS.md. This file only adds 
 
 ## Tests
 - `pytest.ini` sets `python_files = *.py`: tests live next to the code in regular modules.
+- The run image doesn't install pytest, so modules the scheduler imports must not import `pytest`. Tests that need it
+  (`@pytest.mark.asyncio`, `pytest.raises`, fixtures) go in a separate `test_*.py` module next to the code.
 - Several tests need external services:
   - `src/scheduler/runner/test_manager.py` needs OpenStack credentials (`OS_PASSWORD`, ...).
   - `src/scheduler/server/test_server_client.py` needs the internal server on `localhost:8000`. It can be run locally
