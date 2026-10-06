@@ -31,7 +31,7 @@ class TestServerClient:
     ) -> None:
         async with _ahttp.ClientSession("http://localhost:8000") as session:
             client = _sc.ServerClient(session)
-            weather_data = await client.get_weather_data("alpine")
+            weather_data = await client.get_weather_data("c8a15e846e")
 
-        assert weather_data.id == "alpine"
+        assert weather_data.id == "c8a15e846e"
         assert weather_data.user_id is None
