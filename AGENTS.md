@@ -12,10 +12,9 @@ https://github.com/resultes-net/issues/blob/main/AGENTS.md. This file only adds 
 - Git submodules: `pydantic-models`, `openstack-utils`, `jsonrpc`, `dev-utils`, `docker-utils`.
 - The scheduler parses the internal server's responses (e.g. `resultes_pydantic_models.simulations.simulation.Simulation`)
   with its *own* `pydantic-models` checkout. When `server` changes those models incompatibly (e.g. adds a required field),
-  this repo's `pydantic-models` must be moved to the same commit, or the scheduler fails validating every response.
-- To get an unpushed `pydantic-models` commit from `server`'s checkout: in `pydantic-models`,
-  `git fetch ../../server/pydantic-models main`, then check out or rebase onto `FETCH_HEAD`, and commit the new submodule
-  commit in `scheduler`.
+  this repo's `pydantic-models` must be moved to the same commit, or the scheduler fails validating every response. New
+  fields it doesn't know are dropped silently instead (see the org-wide guide, which also describes how to get an unpushed
+  `pydantic-models` commit from another checkout).
 
 ## Runner jobs
 - `scheduler.runner.client.RunnerClient` builds the runner jobs. Inputs are processed in order, so later inputs
