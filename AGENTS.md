@@ -30,6 +30,10 @@ https://github.com/resultes-net/issues/blob/main/AGENTS.md. This file only adds 
    (https://github.com/resultes-net/issues/issues/52). In Loki (see the org-wide guide), crashes show up as "Exception
    occurred: unhandled errors in a TaskGroup (1 sub-exception). Terminating.", and the jobs set to `ERROR` as "Found
    unknown/leftover simulation …" or "… variation …".
+1. Deploying `server` or `client` doesn't fail running jobs in practice: the scheduler has kept running through every
+   internal-server rollout so far, since a rollout starts the new pod before stopping the old one. There's a latent risk,
+   though: `server_client.py` doesn't retry, so a single failed request during a rollout would crash the scheduler (see
+   https://github.com/resultes-net/issues/issues/58). Only a scheduler restart or crash fails running jobs (see 1 and 2).
 
 ## Tests
 1. `pytest.ini` sets `python_files = *.py`: tests live next to the code in regular modules.
