@@ -23,6 +23,14 @@ https://github.com/resultes-net/issues/blob/main/AGENTS.md. This file only adds 
   (glob `**`). Files that the simulation needs (e.g. weather data) therefore only need to be inputs of the
   create-variations job.
 
+## Restarts and crashes
+- On startup, the scheduler sets all simulations and variations still running to `ERROR` (`_set_error_state_on_unknown_jobs`
+  in `src/main.py`). A deployment or a crash therefore fails every running job.
+- An unhandled exception in any job ends the `TaskGroup` in `workflow.py` and crashes the scheduler
+  (https://github.com/resultes-net/issues/issues/52). In Loki (see the org-wide guide), crashes show up as "Exception
+  occurred: unhandled errors in a TaskGroup (1 sub-exception). Terminating.", and the jobs set to `ERROR` as "Found
+  unknown/leftover simulation …" or "… variation …".
+
 ## Tests
 - `pytest.ini` sets `python_files = *.py`: tests live next to the code in regular modules.
 - The run image doesn't install pytest, so modules the scheduler imports must not import `pytest`. Tests that need it
